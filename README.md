@@ -2,8 +2,12 @@ Delphes-Analysis
 ================
 
  * compiling Delphes on the SLC6 from lxplus
+ * \bold{set cmsenv before sourcing setup_slc6.sh in order to set up all enviroment variable correctly.}
 ```
-source /afs/cern.ch/sw/lcg/app/releases/ROOT/5.34.09/x86_64-slc6-gcc46-opt/root/bin/thisroot.sh
-source /afs/cern.ch/sw/lcg/contrib/gcc/4.6/x86_64-slc6-gcc46-opt/setup.sh
+cmsrel CMSSW_6_2_0
+cd CMSSW_6_2_0
+cmsenv
+source setup_slc6.sh
 make
+
 ```
