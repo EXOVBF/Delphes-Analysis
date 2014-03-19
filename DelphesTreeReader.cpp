@@ -23,7 +23,6 @@
 #include "TTree.h"
 #include "TChain.h"
 #include "TString.h"
-#include "THStack.h"
 #include "TClonesArray.h"
 #include "TLorentzVector.h"
 #include "TMath.h"
@@ -55,22 +54,26 @@ eventType event_preselector(ExRootTreeReader *delphesTree, TClonesArray* branchE
     int iEvent=0;
 	for(iEvent = 0; iEvent < delphesTree->GetEntries(); iEvent++)
 	{
+	    if (iEvent % 10000 == 0)
+		{
+			cout << "iEvent =   " << iEvent << endl;
+		}
 		delphesTree -> ReadEntry(iEvent);
-		if(branchEl->GetEntries() == 1 && branchMu->GetEntries() == 0)
+		if(branchEl->GetEntriesFast() == 1 && branchMu->GetEntriesFast() == 0)
 		{
 			Electron* el = (Electron*) branchEl->At(0);
-			MissingET* met = (MissingET*) branchMET->At(0); 
-			if(el->PT > 27 && met->MET > 65)
+			//MissingET* met = (MissingET*) branchMET->At(0); 
+			if(el->PT > 27)// && met->MET > 65)
 			{
 				goodEvent.eventID.push_back(iEvent);
 				goodEvent.lepFlavor.push_back(11);
 			}
 		}
-		if(branchMu->GetEntries() == 1 && branchEl->GetEntries() == 0)
+		if(branchMu->GetEntriesFast() == 1 && branchEl->GetEntriesFast() == 0)
 		{
 			Muon* mu = (Muon*) branchMu->At(0);
-			MissingET* met = (MissingET*) branchMET->At(0); 
-			if(mu->PT > 24 &&  met->MET > 50)
+			//MissingET* met = (MissingET*) branchMET->At(0); 
+			if(mu->PT > 24)// &&  met->MET > 50)
 			{
 				goodEvent.eventID.push_back(iEvent);
 				goodEvent.lepFlavor.push_back(13);
@@ -128,7 +131,8 @@ int main (int argc, char *argv[])
 //----------------------------------------------------------------------------------------
 //variable management
 //
-// -> jets: jets of both type in the output tree are stored in decreasing pt order. 
+// -> jets: jets of both type in the output tree are stored in decreasing pt order.
+// -> leptons: the isolation variable is defined as pt_sum(al particle in a cone)/pt_lep 
 	
 	//--------- getting objects from the delphes tree
 	TClonesArray* branchJet_ak5 = delphesTree->UseBranch("Jet_ak5");
@@ -241,7 +245,7 @@ int main (int argc, char *argv[])
 			
 	eventType goodEvent = event_preselector(delphesTree,branchEl,branchMu,branchMET);
 	
-	cout << endl << "################## TREE CREATION STARTED ##################" << endl;		
+	cout << endl << "################# TREE CREATION STARTED #################" << endl;		
 
 	for(int iEvent = 0; iEvent < (long int)goodEvent.eventID.size(); iEvent++)
 	{
