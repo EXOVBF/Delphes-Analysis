@@ -4,7 +4,7 @@
 
 	- before compiling ---> source ../Decay/setup_slc6.sh
 
-    - compile with ---> c++ -O2 -lm `root-config --cflags --glibs` -L /afs/cern.ch/user/l/lbrianza/work/SIMONE/delphes_code/ -I /afs/cern.ch/user/l/lbrianza/work/SIMONE/delphes_code/ -lDelphes -o DelphesTreeReader DelphesTreeReader.cpp
+    - compile with ---> c++ -O2 -lm `root-config --cflags --glibs` -L /afs/cern.ch/user/s/spigazzi/work/DelphesStuff/delphes_code/ -I /afs/cern.ch/user/s/spigazzi/work/DelphesStuff/delphes_code/ -lDelphes -o DelphesTreeReader DelphesTreeReader.cpp
 
     - instead of lbrianza/work/SIMONE/delphes_code/ put your Delphes folder
 
