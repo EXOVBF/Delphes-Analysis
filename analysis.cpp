@@ -184,6 +184,7 @@ int CreateHistos1D (TString suffix, map<TString, TH1F *> & histos,
     //---create histogram
     for(int iVar=0; iVar<var->size(); iVar++)
     {
+        if( suffix.Contains("Signal")==0 && ((TString)(var->at(iVar))).Contains("MWW")==1) continue;
         TH1F * h_tmp = new TH1F (TString (var->at(iVar)) + "__"+suffix, var->at(iVar) + "__"+suffix, 
                                     nbin->at(iVar), min->at(iVar), max->at(iVar)); 
         h_tmp->SetFillColor(sample_color);
@@ -289,7 +290,8 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName, map<TStrin
     }
     cout << "read " << ch->GetEntries() << " events for " << sampleName.Data() << " sample\n" ;
     delphes_tree DT ;
-    DT.Init(ch, false);
+    if(sampleName.Contains("Signal")) DT.Init(ch, true);
+    else DT.Init(ch, false);
 
 //-----------------Events loop-----------------------------------------------------------------
  
@@ -397,14 +399,14 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName, map<TStrin
                 //---remove W's CA8_jet from ak5 collection 
                 deltaR_jets_tmp = TMath::Sqrt(pow(DT.jet_CA8_eta->at(CA8_tmp.front())-DT.jet_ak5_eta->at(iak5),2) +
                                           pow(DT.jet_CA8_phi->at(CA8_tmp.front())-DT.jet_ak5_phi->at(iak5),2));
-                if( DT.jet_ak5_pt->at(iak5) > 10 && abs(DT.jet_ak5_eta->at(iak5)) < 1.556 && deltaR_jets_tmp > 0.8)
+                if( DT.jet_ak5_pt->at(iak5) > 30 && abs(DT.jet_ak5_eta->at(iak5)) < 1.556 && deltaR_jets_tmp > 0.8)
                 {            
                     if(histos_1D["nc_jet_ak5_h_pt_BR"]) histos_1D["nc_jet_ak5_h_pt_BR"]->Fill(DT.jet_ak5_pt->at(iak5));
                     if(histos_1D["nc_jet_ak5_h_phi_BR"]) histos_1D["nc_jet_ak5_h_phi_BR"]->Fill(DT.jet_ak5_phi->at(iak5));
                     ak5_tmp.push_back(iak5);
                     n_ak5_tmp++;
                 }
-                if( DT.jet_ak5_pt->at(iak5) > 10 && abs(DT.jet_ak5_eta->at(iak5)) > 1.556 && deltaR_jets_tmp > 0.8)
+                if( DT.jet_ak5_pt->at(iak5) > 30 && abs(DT.jet_ak5_eta->at(iak5)) > 1.556 && deltaR_jets_tmp > 0.8)
                 {                
                     if(histos_1D["nc_jet_ak5_h_pt_EC"]) histos_1D["nc_jet_ak5_h_pt_EC"]->Fill(DT.jet_ak5_pt->at(iak5));
                     if(histos_1D["nc_jet_ak5_h_phi_EC"]) histos_1D["nc_jet_ak5_h_phi_EC"]->Fill(DT.jet_ak5_phi->at(iak5));
@@ -447,6 +449,7 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName, map<TStrin
             W_lep_tmp=0;
             W_had_tmp=1;
         }
+        //---fat jet
         deltaR_Wl = TMath::Sqrt(pow(DT.lhe_W_eta->at(W_lep_tmp)-DT.lep_eta->at(good_lep_tmp),2)+
                                 pow(DT.lhe_W_phi->at(W_lep_tmp)-DT.lep_phi->at(good_lep_tmp),2));
         if(DT.lhe_W_pt->size() == 2)
@@ -476,7 +479,7 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName, map<TStrin
             }
         }
         //---leptonic W reco
-        TLorentzVector lep_4vect_tmp, nu_4vect_tmp, W_reco_4vect_tmp;
+        TLorentzVector lep_4vect_tmp, nu_4vect_tmp, J_4vect_tmp, W_reco_4vect_tmp, G_reco_4vect_tmp;
         lep_4vect_tmp.SetPtEtaPhiE(DT.lep_pt->at(good_lep_tmp),DT.lep_eta->at(good_lep_tmp),
                                    DT.lep_phi->at(good_lep_tmp),DT.lep_E_with_smearing->at(good_lep_tmp));
         //---nu reconstruction
@@ -506,6 +509,7 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName, map<TStrin
             histos_2D["ps_Wlv_daltaR_vs_ptRatio"]->Fill(W_reco_4vect_tmp.Pt()/
                                                         DT.lhe_W_pt->at(W_lep_tmp),deltaR_Wlv);
         }
+        //---tag jets
         if(histos_1D["ps_jet_ak5_h_pt"])
         {                             
             histos_1D["ps_jet_ak5_h_pt"]->Fill(DT.jet_ak5_pt->at(ak5_tmp.front()));
@@ -517,7 +521,19 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName, map<TStrin
         if(histos_1D["ps_jet_ak5_h_phi"])
         {                             
             histos_1D["ps_jet_ak5_h_phi"]->Fill(DT.jet_ak5_phi->at(ak5_tmp.front()));
-        }                      
+        }
+        //---mlvJ
+        J_4vect_tmp.SetPtEtaPhiM(DT.jet_CA8_pt->at(CA8_tmp.front()),DT.jet_CA8_eta->at(CA8_tmp.front()),
+                                 DT.jet_CA8_phi->at(CA8_tmp.front()),DT.jet_CA8_mass_pruned->at(CA8_tmp.front()));
+        G_reco_4vect_tmp = W_reco_4vect_tmp + J_4vect_tmp;
+        if(histos_1D["ps_mlvJ_reco"])
+        {                             
+            histos_1D["ps_mlvJ_reco"]->Fill(G_reco_4vect_tmp.M());
+        }
+        if(histos_1D["ps_MWW_gen"])
+        {                             
+            histos_1D["ps_MWW_gen"]->Fill(DT.lhe_X_mass->at(0));
+        }
         //------------------Basic Selection---------------------------------------------------- 
         
         

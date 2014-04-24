@@ -245,7 +245,7 @@ void delphes_tree::Init (TTree * tree, bool signal)
    lhe_W_phi = 0;
    lhe_W_mass = 0;
    lhe_W_pid = 0;
-   if( signal == 1 )
+   if( signal )
    {
       lhe_X_pt = 0;
       lhe_X_eta = 0;
@@ -347,7 +347,7 @@ void delphes_tree::Init (TTree * tree, bool signal)
    fChain->SetBranchAddress("lhe_W_phi", &lhe_W_phi, &b_lhe_W_phi);
    fChain->SetBranchAddress("lhe_W_mass", &lhe_W_mass, &b_lhe_W_mass);
    fChain->SetBranchAddress("lhe_W_pid", &lhe_W_pid, &b_lhe_W_pid);
-   if( signal == 1 )
+   if( signal )
    {
       fChain->SetBranchAddress("lhe_X_pt", &lhe_X_pt, &b_lhe_X_pt);
       fChain->SetBranchAddress("lhe_X_eta", &lhe_X_eta, &b_lhe_X_eta);
