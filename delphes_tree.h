@@ -34,11 +34,11 @@ public :
    vector<float>   *lhe_nu_eta;
    vector<float>   *lhe_nu_phi;
    vector<float>   *lhe_nu_flv;
-   vector<float>   *lhe_q_pt;
-   vector<float>   *lhe_q_eta;
-   vector<float>   *lhe_q_phi;
-   vector<float>   *lhe_q_flv;
-   vector<float>   *lhe_q_from_W;
+   vector<float>   *lhe_p_pt;
+   vector<float>   *lhe_p_eta;
+   vector<float>   *lhe_p_phi;
+   vector<float>   *lhe_p_flv;
+   vector<float>   *lhe_p_from_W;
    vector<float>   *lhe_W_pt;
    vector<float>   *lhe_W_eta;
    vector<float>   *lhe_W_phi;
@@ -129,11 +129,11 @@ public :
    TBranch        *b_lhe_nu_eta;   //!
    TBranch        *b_lhe_nu_phi;   //!
    TBranch        *b_lhe_nu_flv;   //!
-   TBranch        *b_lhe_q_pt;   //!
-   TBranch        *b_lhe_q_eta;   //!
-   TBranch        *b_lhe_q_phi;   //!
-   TBranch        *b_lhe_q_flv;   //!
-   TBranch        *b_lhe_q_from_W;   //!
+   TBranch        *b_lhe_p_pt;   //!
+   TBranch        *b_lhe_p_eta;   //!
+   TBranch        *b_lhe_p_phi;   //!
+   TBranch        *b_lhe_p_flv;   //!
+   TBranch        *b_lhe_p_from_W;   //!
    TBranch        *b_lhe_W_pt;   //!
    TBranch        *b_lhe_W_eta;   //!
    TBranch        *b_lhe_W_phi;   //!
@@ -235,11 +235,11 @@ void delphes_tree::Init (TTree * tree, bool signal)
    lhe_nu_eta = 0;
    lhe_nu_phi = 0;
    lhe_nu_flv = 0;
-   lhe_q_pt = 0;
-   lhe_q_eta = 0;
-   lhe_q_phi = 0;
-   lhe_q_flv = 0;
-   lhe_q_from_W = 0;
+   lhe_p_pt = 0;
+   lhe_p_eta = 0;
+   lhe_p_phi = 0;
+   lhe_p_flv = 0;
+   lhe_p_from_W = 0;
    lhe_W_pt = 0;
    lhe_W_eta = 0;
    lhe_W_phi = 0;
@@ -337,11 +337,11 @@ void delphes_tree::Init (TTree * tree, bool signal)
    fChain->SetBranchAddress("lhe_nu_eta", &lhe_nu_eta, &b_lhe_nu_eta);
    fChain->SetBranchAddress("lhe_nu_phi", &lhe_nu_phi, &b_lhe_nu_phi);
    fChain->SetBranchAddress("lhe_nu_flv", &lhe_nu_flv, &b_lhe_nu_flv);
-   fChain->SetBranchAddress("lhe_q_pt", &lhe_q_pt, &b_lhe_q_pt);
-   fChain->SetBranchAddress("lhe_q_eta", &lhe_q_eta, &b_lhe_q_eta);
-   fChain->SetBranchAddress("lhe_q_phi", &lhe_q_phi, &b_lhe_q_phi);
-   fChain->SetBranchAddress("lhe_q_flv", &lhe_q_flv, &b_lhe_q_flv);
-   fChain->SetBranchAddress("lhe_q_from_W", &lhe_q_from_W, &b_lhe_q_from_W);
+   fChain->SetBranchAddress("lhe_p_pt", &lhe_p_pt, &b_lhe_p_pt);
+   fChain->SetBranchAddress("lhe_p_eta", &lhe_p_eta, &b_lhe_p_eta);
+   fChain->SetBranchAddress("lhe_p_phi", &lhe_p_phi, &b_lhe_p_phi);
+   fChain->SetBranchAddress("lhe_p_flv", &lhe_p_flv, &b_lhe_p_flv);
+   fChain->SetBranchAddress("lhe_p_from_W", &lhe_p_from_W, &b_lhe_p_from_W);
    fChain->SetBranchAddress("lhe_W_pt", &lhe_W_pt, &b_lhe_W_pt);
    fChain->SetBranchAddress("lhe_W_eta", &lhe_W_eta, &b_lhe_W_eta);
    fChain->SetBranchAddress("lhe_W_phi", &lhe_W_phi, &b_lhe_W_phi);
