@@ -22,6 +22,7 @@
 #include "TLorentzVector.h"
 
 #include "../include/delphes_tree.h"
+#include "../include/easy_tree.h"
 
 //#define gSIGMAMG800 = 
 #define gSIGMAW4JETS = 211
