@@ -1,8 +1,8 @@
 /*****************************************************************************************
 
-    c++ -O2 -lm `root-config --cflags --glibs` -o makePlots makePlots.cpp 
+    c++ -O2 -lm `root-config --cflags --glibs` -o dumpLightNtuples dumpLightNtuples.cpp 
     
-    or exexute compile.sh makePlots
+    or exexute compile.sh cpp/dumpLightNtuples.cpp
 
 /****************************************************************************************/
 
@@ -22,7 +22,7 @@
 #include "TLorentzVector.h"
 
 #include "../include/delphes_tree.h"
-#include "../include/easy_tree.h"
+#include "../include/light_tree.h"
 
 //#define gSIGMAMG800 = 
 #define gSIGMAW4JETS = 211
@@ -245,14 +245,17 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
     }
     cout << "read " << ch->GetEntries() << " events in " << ch->GetNtrees() 
          << " files of " << sampleName.Data() << " sample\n" ;
-    //---Init trees
-    delphes_tree* DT ;
-    TTree* ET;
+    //---Init trees 
+    delphes_tree* DT = new delphes_tree();
     if(sampleName.Contains("Signal")) 
 	DT->Init(ch, true);
     else 
 	DT->Init(ch, false);
-    InitEasyTree(ET);
+    TFile* outFile = TFile::Open("light_ntuples/"+sampleName+".root", "recreate");
+    outFile->cd();
+    TTree* ET = new TTree(sampleName, sampleName);
+    InitLightTree(ET);
+    ET->SetDirectory(0);
 
 //-----------------Events loop------------------------------------------------------------
  
@@ -281,7 +284,7 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
 	dR_Wh_j = 100;
         //---Reco leptonic object
         TLorentzVector lep_4vect_tmp, nu_4vect_tmp, J_4vect_tmp, Wl_reco_4vect_tmp, G_reco_4vect_tmp;
-        TLorentzVector vbf_jj_4vect_tmp, vbf_j1_4vect_tmp, vbf_j2_4vect_tmp;
+        TLorentzVector vbf_j1_4vect_tmp, vbf_j2_4vect_tmp;
         TLorentzVector Wl_closerj_4vect_tmp, Wh_closerj_4vect_tmp;
         //------------------Preselection--------------------------------------------------
         //---PV selection---
@@ -327,13 +330,7 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
                 n_lepl_tmp++;
             }
         }
-	lep_4vect_tmp.SetPtEtaPhiE(DT->lep_pt->at(good_lep_tmp),DT->lep_eta->at(good_lep_tmp),
-                                   DT->lep_phi->at(good_lep_tmp),DT->lep_E_with_smearing->at(good_lep_tmp));
-        nu_4vect_tmp.SetPtEtaPhiM(DT->MET->at(0),0,DT->MET_phi->at(0),0);
-        nu_4vect_tmp = BuildNu4Vector (lep_4vect_tmp, nu_4vect_tmp, nu_pz_comp_type);
-        Wl_reco_4vect_tmp = lep_4vect_tmp + nu_4vect_tmp;
 	//---select reco_CA8---
-        int good_CA8=-1;
         for(int iCA8=0; iCA8<DT->number_jet_CA8->at(0); iCA8++)
         {
             if( DT->jet_CA8_pt->at(iCA8) > 200 && abs(DT->jet_CA8_eta->at(iCA8)) < 2.4 )
@@ -342,61 +339,48 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
                 n_CA8_tmp++;
             }
         }
-	J_4vect_tmp.SetPtEtaPhiM(DT->jet_CA8_pt->at(good_CA8),DT->jet_CA8_eta->at(good_CA8),
-                                 DT->jet_CA8_phi->at(good_CA8),DT->jet_CA8_mass_pruned->at(good_CA8));
-        G_reco_4vect_tmp = Wl_reco_4vect_tmp + J_4vect_tmp;	
-        if(n_CA8_tmp > 0)
+        if(n_CA8_tmp > 0 && n_lept_tmp == 1)
         {
+	    //---build reco object
+	    lep_4vect_tmp.SetPtEtaPhiE(DT->lep_pt->at(good_lep_tmp),
+				       DT->lep_eta->at(good_lep_tmp),
+				       DT->lep_phi->at(good_lep_tmp),
+				       DT->lep_E_with_smearing->at(good_lep_tmp));
+	    nu_4vect_tmp.SetPtEtaPhiM(DT->MET->at(0),0,DT->MET_phi->at(0),0);
+	    nu_4vect_tmp = BuildNu4Vector (lep_4vect_tmp, nu_4vect_tmp, nu_pz_comp_type);
+	    Wl_reco_4vect_tmp = lep_4vect_tmp + nu_4vect_tmp;
+	    J_4vect_tmp.SetPtEtaPhiM(DT->jet_CA8_pt->at(good_CA8_tmp),
+				     DT->jet_CA8_eta->at(good_CA8_tmp),
+				     DT->jet_CA8_phi->at(good_CA8_tmp),
+				     DT->jet_CA8_mass_pruned->at(good_CA8_tmp));
+	    G_reco_4vect_tmp = Wl_reco_4vect_tmp + J_4vect_tmp;
+	    //---analyze ak5 jets
             for(int iak5=0; iak5<DT->number_jet_ak5->at(0); iak5++)
             {           
-                //---remove W's CA8_jet from ak5 collection 
-                deltaR_jets_tmp = DeltaR(DT->jet_CA8_eta->at(good_CA8_tmp), DT->jet_ak5_eta->at(iak5),
-					 DT->jet_CA8_phi->at(good_CA8_tmp), DT->jet_ak5_phi->at(iak5));
-                if(DT->jet_ak5_pt->at(iak5) > 30 && deltaR_jets_tmp > 0.8 && DT->jet_ak5_eta->at(iak5) < 4.5)
+                //---remove W CA8_jet from ak5 collection 
+                float dR_Wh_j_tmp = DeltaR(DT->jet_CA8_eta->at(good_CA8_tmp), DT->jet_ak5_eta->at(iak5),
+					   DT->jet_CA8_phi->at(good_CA8_tmp), DT->jet_ak5_phi->at(iak5));
+                if(DT->jet_ak5_pt->at(iak5) > 30 && dR_Wh_j_tmp > 0.8 && DT->jet_ak5_eta->at(iak5) < 4.5)
                 {            
                     ak5_tmp.push_back(iak5);
                     n_ak5_tmp++;
-		    for(int iak5=0; iak5<ak5_tmp.size(); iak5++)
+		    float dR_Wl_j_tmp = DeltaR(Wl_reco_4vect_tmp.Eta(), 
+					       DT->jet_ak5_eta->at(iak5),
+					       Wl_reco_4vect_tmp.Phi(), 
+					       DT->jet_ak5_phi->at(iak5));
+		    if(dR_Wl_j_tmp < dR_Wl_j)
 		    {
-			float dR_Wl_j_tmp = DeltaR(Wl_reco_4vect_tmp.Eta(), 
-						   DT->jet_ak5_eta->at(iak5),
-						   Wl_reco_4vect_tmp.Phi(), 
-						   DT->jet_ak5_phi->at(iak5));
-			float dR_Wh_j_tmp = DeltaR(J_4vect_tmp.Eta(), 
-						   DT->jet_ak5_eta->at(iak5),
-						   J_4vect_tmp.Phi(), 
-						   DT->jet_ak5_phi->at(iak5));
-			if(dR_Wl_j_tmp < dR_Wh_j_tmp && dR_Wl_j_tmp < dR_Wl_j)
-			{
-			    Wl_closerjet_tmp = iak5;
-			    dR_Wl_j = dR_Wl_j_tmp;
-			}
-			if(dR_Wh_j_tmp < dR_Wl_j_tmp && dR_Wh_j_tmp < dR_Wh_j)
-			{
-			    Wh_closerjet_tmp = iak5;
-			    dR_Wh_j = dR_Wh_j_tmp;
-			}
+			Wl_closerjet_tmp = iak5;
+			dR_Wl_j = dR_Wl_j_tmp;
+		    }
+		    if(dR_Wh_j_tmp < dR_Wh_j)
+		    {
+			Wh_closerjet_tmp = iak5;
+			dR_Wh_j = dR_Wh_j_tmp;
 		    }
                 }
 	    }
 	}
-	vbf_j1_4vect_tmp.SetPtEtaPhiM(DT->jet_ak5_pt->at(ak5_tmp.at(0)), 
-				      DT->jet_ak5_eta->at(ak5_tmp.at(0)),
-				      DT->jet_ak5_phi->at(ak5_tmp.at(0)), 
-				      DT->jet_ak5_mass_pruned->at(ak5_tmp.at(0)));
-	vbf_j2_4vect_tmp.SetPtEtaPhiM(DT->jet_ak5_pt->at(ak5_tmp.at(1)), 
-				      DT->jet_ak5_eta->at(ak5_tmp.at(1)),
-				      DT->jet_ak5_phi->at(ak5_tmp.at(1)), 
-				      DT->jet_ak5_mass_pruned->at(ak5_tmp.at(1)));
-	vbf_jj_4vect_tmp = vbf_j1_4vect_tmp + vbf_j2_4vect_tmp;
-	Wl_closerj_4vect_tmp.SetPtEtaPhiM(DT->jet_ak5_pt->at(Wl_closerjet_tmp),
-					  DT->jet_ak5_eta->at(Wl_closerjet_tmp),
-					  DT->jet_ak5_phi->at(Wl_closerjet_tmp),
-					  DT->jet_ak5_mass_pruned->at(Wl_closerjet_tmp));	
-	Wh_closerj_4vect_tmp.SetPtEtaPhiM(DT->jet_ak5_pt->at(Wh_closerjet_tmp),
-					  DT->jet_ak5_eta->at(Wh_closerjet_tmp),
-					  DT->jet_ak5_phi->at(Wh_closerjet_tmp),
-					  DT->jet_ak5_mass_pruned->at(Wh_closerjet_tmp));
         //-----apply preselection cuts-----
         if( n_lepl_tmp > 0 || n_lept_tmp != 1 || n_CA8_tmp < 1 || n_ak5_tmp < 2)
         {
@@ -406,8 +390,8 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
         //-----Store reco variables-----		
         //---leptons
 	lep_pt = lep_4vect_tmp.Pt();
-	lep_pt = lep_4vect_tmp.Eta();
-	lep_pt = lep_4vect_tmp.Phi();
+	lep_eta = lep_4vect_tmp.Eta();
+	lep_phi = lep_4vect_tmp.Phi();
         //---MET
 	MET = DT->MET->at(0);
 	MET_phi = DT->MET_phi->at(0);
@@ -418,6 +402,11 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
 	lv_phi = Wl_reco_4vect_tmp.Phi();
 	lv_delta_R = DeltaR(lep_4vect_tmp.Eta(), nu_4vect_tmp.Eta(),
 			    lep_4vect_tmp.Phi(), nu_4vect_tmp.Phi());
+	//---Wl closerjet
+	Wl_closerj_4vect_tmp.SetPtEtaPhiM(DT->jet_ak5_pt->at(Wl_closerjet_tmp),
+					  DT->jet_ak5_eta->at(Wl_closerjet_tmp),
+					  DT->jet_ak5_phi->at(Wl_closerjet_tmp),
+					  DT->jet_ak5_mass_pruned->at(Wl_closerjet_tmp));
 	lv_closerjet_mass = (Wl_reco_4vect_tmp + Wl_closerj_4vect_tmp).M();
 	//---CA8 jet (hadronic W reco)
 	CA8_jet_pt = J_4vect_tmp.Pt();
@@ -426,10 +415,34 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
 	CA8_jet_mass = J_4vect_tmp.M();
 	CA8_jet_t2t1 = DT->jet_CA8_tau2->at(good_CA8_tmp)/DT->jet_CA8_tau1->at(good_CA8_tmp);
 	CA8_jet_t3t2 = DT->jet_CA8_tau3->at(good_CA8_tmp)/DT->jet_CA8_tau2->at(good_CA8_tmp);
+	//---CA8 closerjet
+	Wh_closerj_4vect_tmp.SetPtEtaPhiM(DT->jet_ak5_pt->at(Wh_closerjet_tmp),
+					  DT->jet_ak5_eta->at(Wh_closerjet_tmp),
+					  DT->jet_ak5_phi->at(Wh_closerjet_tmp),
+					  DT->jet_ak5_mass_pruned->at(Wh_closerjet_tmp));
 	CA8_closerjet_mass = (J_4vect_tmp + Wh_closerj_4vect_tmp).M();
         //---mlvJ
 	lvJ_mass = G_reco_4vect_tmp.M();
-	
+	//---vbf jets
+	vbf_j1_4vect_tmp.SetPtEtaPhiM(DT->jet_ak5_pt->at(ak5_tmp.at(0)), 
+				      DT->jet_ak5_eta->at(ak5_tmp.at(0)),
+				      DT->jet_ak5_phi->at(ak5_tmp.at(0)), 
+				      DT->jet_ak5_mass_pruned->at(ak5_tmp.at(0)));
+	vbf_j2_4vect_tmp.SetPtEtaPhiM(DT->jet_ak5_pt->at(ak5_tmp.at(1)), 
+				      DT->jet_ak5_eta->at(ak5_tmp.at(1)),
+				      DT->jet_ak5_phi->at(ak5_tmp.at(1)), 
+				      DT->jet_ak5_mass_pruned->at(ak5_tmp.at(1)));
+	vbf_jet1_pt = vbf_j1_4vect_tmp.Pt();
+	vbf_jet1_eta = vbf_j1_4vect_tmp.Eta();
+	vbf_jet1_phi = vbf_j1_4vect_tmp.Phi();
+	vbf_jet1_mass = vbf_j1_4vect_tmp.M();
+	vbf_jet2_pt = vbf_j2_4vect_tmp.Pt();
+	vbf_jet2_eta = vbf_j2_4vect_tmp.Eta();
+	vbf_jet2_phi = vbf_j2_4vect_tmp.Phi();
+	vbf_jet2_mass = vbf_j2_4vect_tmp.M();
+	vbf_jj_mass = (vbf_j1_4vect_tmp + vbf_j2_4vect_tmp).M();
+	vbf_jj_delta_R = DeltaR(vbf_jet1_eta, vbf_jet2_eta, 
+				vbf_jet1_phi, vbf_jet2_phi);
 	//-----Store gen variables-----
 /*        //---Select W's
         if(sampleName.Contains("Z") == 0)
@@ -444,7 +457,7 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
                 W_lep_tmp=0;
                 W_had_tmp=1;
             }
-	    }*/
+	    }
 
         //---tag quark (for W+jets they may also be glouns...)
 	q1_tmp = -1;
@@ -481,9 +494,14 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
                                       DT->lhe_p_phi->at(q1_tmp),0);
         q2_vbf_4vect_tmp.SetPtEtaPhiM(DT->lhe_p_pt->at(q2_tmp),DT->lhe_p_eta->at(q2_tmp),
                                       DT->lhe_p_phi->at(q2_tmp),0);
-        qq_vbf_4vect_tmp = q1_vbf_4vect_tmp + q2_vbf_4vect_tmp;
+        qq_vbf_4vect_tmp = q1_vbf_4vect_tmp + q2_vbf_4vect_tmp;*/
+	ET->Fill();
     }    
     cout << "number of events that passed the preselection:  " << countPSEvents << endl;    
+
+    ET->Write();
+    outFile->Close();
+	
     return 0 ;
 }
 
