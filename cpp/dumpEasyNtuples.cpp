@@ -46,7 +46,7 @@ float DeltaPhi (float phi1, float phi2)
 
 float DeltaR (float eta1, float eta2, float phi1, float phi2)
 {
-    float d_phi = deltaPhi(phi1, phi2);
+    float d_phi = DeltaPhi(phi1, phi2);
     float d_eta = TMath::Abs(eta1 - eta2);
 
     return TMath::Sqrt(pow(d_eta,2)+pow(d_phi,2));
@@ -210,7 +210,7 @@ TLorentzVector BuildNu4Vector (TLorentzVector lep_4vect, TLorentzVector MET_4vec
 
 //*****************************************************************************************
 
-int readDataset (TString sampleName, vector<TString> datasetBaseName, map<TString, TH1F *> histos_1D, map<TString, TH2F *> histos_2D) 
+int readDataset (TString sampleName, vector<TString> datasetBaseName)
 {
 //-----------------Definitions------------------------------------------------------------
 
@@ -351,7 +351,7 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName, map<TStrin
             {           
                 //---remove W's CA8_jet from ak5 collection 
                 deltaR_jets_tmp = DeltaR(DT->jet_CA8_eta->at(good_CA8_tmp), DT->jet_ak5_eta->at(iak5),
-					 DeltaPhi(DT->jet_CA8_phi->at(good_CA8_tmp), DT->jet_ak5_phi->at(iak5)));
+					 DT->jet_CA8_phi->at(good_CA8_tmp), DT->jet_ak5_phi->at(iak5));
                 if(DT->jet_ak5_pt->at(iak5) > 30 && deltaR_jets_tmp > 0.8 && DT->jet_ak5_eta->at(iak5) < 4.5)
                 {            
                     ak5_tmp.push_back(iak5);
@@ -381,22 +381,22 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName, map<TStrin
 	    }
 	}
 	vbf_j1_4vect_tmp.SetPtEtaPhiM(DT->jet_ak5_pt->at(ak5_tmp.at(0)), 
-				      DT->jet_ak5_pt->eta(ak5_tmp.at(0)),
+				      DT->jet_ak5_eta->at(ak5_tmp.at(0)),
 				      DT->jet_ak5_phi->at(ak5_tmp.at(0)), 
 				      DT->jet_ak5_mass_pruned->at(ak5_tmp.at(0)));
 	vbf_j2_4vect_tmp.SetPtEtaPhiM(DT->jet_ak5_pt->at(ak5_tmp.at(1)), 
-				      DT->jet_ak5_pt->eta(ak5_tmp.at(1)),
+				      DT->jet_ak5_eta->at(ak5_tmp.at(1)),
 				      DT->jet_ak5_phi->at(ak5_tmp.at(1)), 
 				      DT->jet_ak5_mass_pruned->at(ak5_tmp.at(1)));
 	vbf_jj_4vect_tmp = vbf_j1_4vect_tmp + vbf_j2_4vect_tmp;
-	Wl_closerj_4vect_tmp.SetPtEtaPhi(DT->jet_ak5_pt->at(Wl_closerjet_tmp),
-					 DT->jet_ak5_eta->at(Wl_closerjet_tmp),
-					 DT->jet_ak5_phi->at(Wl_closerjet_tmp),
-					 DT->jet_ak5_mass_pruned->at(Wl_closerjet_tmp));	
-	Wh_closerj_4vect_tmp.SetPtEtaPhi(DT->jet_ak5_pt->at(Wh_closerjet_tmp),
-					 DT->jet_ak5_eta->at(Wh_closerjet_tmp),
-					 DT->jet_ak5_phi->at(Wh_closerjet_tmp),
-					 DT->jet_ak5_mass_pruned->at(Wh_closerjet_tmp));
+	Wl_closerj_4vect_tmp.SetPtEtaPhiM(DT->jet_ak5_pt->at(Wl_closerjet_tmp),
+					  DT->jet_ak5_eta->at(Wl_closerjet_tmp),
+					  DT->jet_ak5_phi->at(Wl_closerjet_tmp),
+					  DT->jet_ak5_mass_pruned->at(Wl_closerjet_tmp));	
+	Wh_closerj_4vect_tmp.SetPtEtaPhiM(DT->jet_ak5_pt->at(Wh_closerjet_tmp),
+					  DT->jet_ak5_eta->at(Wh_closerjet_tmp),
+					  DT->jet_ak5_phi->at(Wh_closerjet_tmp),
+					  DT->jet_ak5_mass_pruned->at(Wh_closerjet_tmp));
         //-----apply preselection cuts-----
         if( n_lepl_tmp > 0 || n_lept_tmp != 1 || n_CA8_tmp < 1 || n_ak5_tmp < 2)
         {
@@ -509,7 +509,7 @@ int main (int argc, char* argv[])
 //-----------------Definitions------------------------------------------------------------
     //---samples
     string sample_path;
-    string buffer_sample_dir, buffer_sample_name;
+    string buffer_sample_dir, buffer_sample_name, buffer_type;
     vector<string> sample_dir, sample_name;
 //-----------------Read Config file-------------------------------------------------------
     //---samples

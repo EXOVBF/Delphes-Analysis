@@ -1,13 +1,14 @@
-#!/bin/sh
+#!/bin/bash
 
 if [ ${1} = "all" ]; then
     names=$(ls cpp | tr " " "\n")
     
     for name_tmp in $names 
     do
-	if [$name_tmp = "DelphesTreeReader.cpp" -o
-		${name_tmp:${#name_tmp}} = "~" -o
-		    ${name_tmp:${#name_tmp}} = "#"]; then
+	if [ $name_tmp = "DelphesTreeReader.cpp" ] || 
+	    [[ $name_tmp = *SAFE* ]] || 
+	    [ ${name_tmp: -1} = "~" ] || 
+	    [ ${name_tmp: -1} = "#" ]; then
 	    continue;
 	fi
 	echo compiling $name_tmp
