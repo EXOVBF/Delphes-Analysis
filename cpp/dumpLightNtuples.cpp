@@ -24,9 +24,11 @@
 #include "../include/delphes_tree.h"
 #include "../include/light_tree.h"
 
-//#define gSIGMAMG800 = 
-#define gSIGMAW4JETS = 211
-#define gSIGMAZgJETS = 3053.71
+#define gSIGMAttbar = 225.197*2
+#define ttbarBRlvjj = 0.44
+#define gSIGMAW4JETS = 211*2
+#define gSIGMAZ4JETS = 3053.71*2
+#define LUMI = 19250
 
 using namespace std ;
 
@@ -223,8 +225,9 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
     //---quarks
     int q1_tmp=0, q2_tmp=0;
     float q1_pt_tmp=-1, q2_pt_tmp=-1;
-    vector<float> std_vect_tmp;
+    vector<float> ord_quark_tmp;
     vector<float>::iterator max_tmp;
+    bool isFirst;
     //---jets
     float deltaR_jets_tmp=0;
     int n_CA8_tmp=0, n_ak5_tmp=0;
@@ -253,9 +256,15 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
 	DT->Init(ch, false);
     TFile* outFile = TFile::Open("light_ntuples/"+sampleName+".root", "recreate");
     outFile->cd();
-    TTree* ET = new TTree(sampleName, sampleName);
+    TTree* ET = new TTree("light_tree", "light_tree");
     InitLightTree(ET);
     ET->SetDirectory(0);
+    if(sampleName.Contains("ttbar"))
+	scale = gSIGMAttbar/(ch->GetNtrees()*1000000*ttbarBRlvjj);
+    if(sampleName.Contains("W4jets"))
+	scale = gSIGMAW4JETS/(ch->GetNtrees()*50000);
+    if(sampleName.Contains("Z4jets"))
+	scale = gSIGMAZ4JETS/(ch->GetNtrees()*50000);
 
 //-----------------Events loop------------------------------------------------------------
  
@@ -273,18 +282,15 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
         n_lepl_tmp = 0;
         n_CA8_tmp = 0;
         n_ak5_tmp = 0;
-	q1_tmp = -1;
-	q2_tmp = -1;
-        q1_pt_tmp = -1;
-        q2_pt_tmp = -1;
-        std_vect_tmp.clear();
+	isFirst = 0;
+        ord_quark_tmp.clear();
         good_CA8_tmp = 0;
         ak5_tmp.clear();
 	dR_Wl_j = 100;
 	dR_Wh_j = 100;
         //---Reco leptonic object
         TLorentzVector lep_4vect_tmp, nu_4vect_tmp, J_4vect_tmp, Wl_reco_4vect_tmp, G_reco_4vect_tmp;
-        TLorentzVector vbf_j1_4vect_tmp, vbf_j2_4vect_tmp;
+        TLorentzVector vbf_j1_4vect_tmp, vbf_j2_4vect_tmp, vbf_qq_4vect_tmp;
         TLorentzVector Wl_closerj_4vect_tmp, Wh_closerj_4vect_tmp;
         //------------------Preselection--------------------------------------------------
         //---PV selection---
@@ -330,6 +336,9 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
                 n_lepl_tmp++;
             }
         }
+	//---apply basic selection on leptons---
+	if(n_lepl_tmp > 0 || n_lept_tmp != 1)
+	    continue;
 	//---select reco_CA8---
         for(int iCA8=0; iCA8<DT->number_jet_CA8->at(0); iCA8++)
         {
@@ -339,53 +348,52 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
                 n_CA8_tmp++;
             }
         }
-        if(n_CA8_tmp > 0 && n_lept_tmp == 1)
-        {
-	    //---build reco object
-	    lep_4vect_tmp.SetPtEtaPhiE(DT->lep_pt->at(good_lep_tmp),
-				       DT->lep_eta->at(good_lep_tmp),
-				       DT->lep_phi->at(good_lep_tmp),
-				       DT->lep_E_with_smearing->at(good_lep_tmp));
-	    nu_4vect_tmp.SetPtEtaPhiM(DT->MET->at(0),0,DT->MET_phi->at(0),0);
-	    nu_4vect_tmp = BuildNu4Vector (lep_4vect_tmp, nu_4vect_tmp, nu_pz_comp_type);
-	    Wl_reco_4vect_tmp = lep_4vect_tmp + nu_4vect_tmp;
-	    J_4vect_tmp.SetPtEtaPhiM(DT->jet_CA8_pt->at(good_CA8_tmp),
-				     DT->jet_CA8_eta->at(good_CA8_tmp),
-				     DT->jet_CA8_phi->at(good_CA8_tmp),
-				     DT->jet_CA8_mass_pruned->at(good_CA8_tmp));
-	    G_reco_4vect_tmp = Wl_reco_4vect_tmp + J_4vect_tmp;
-	    //---analyze ak5 jets
-            for(int iak5=0; iak5<DT->number_jet_ak5->at(0); iak5++)
-            {           
-                //---remove W CA8_jet from ak5 collection 
-                float dR_Wh_j_tmp = DeltaR(DT->jet_CA8_eta->at(good_CA8_tmp), DT->jet_ak5_eta->at(iak5),
-					   DT->jet_CA8_phi->at(good_CA8_tmp), DT->jet_ak5_phi->at(iak5));
-                if(DT->jet_ak5_pt->at(iak5) > 30 && dR_Wh_j_tmp > 0.8 && DT->jet_ak5_eta->at(iak5) < 4.5)
-                {            
-                    ak5_tmp.push_back(iak5);
-                    n_ak5_tmp++;
-		    float dR_Wl_j_tmp = DeltaR(Wl_reco_4vect_tmp.Eta(), 
-					       DT->jet_ak5_eta->at(iak5),
-					       Wl_reco_4vect_tmp.Phi(), 
-					       DT->jet_ak5_phi->at(iak5));
-		    if(dR_Wl_j_tmp < dR_Wl_j)
-		    {
-			Wl_closerjet_tmp = iak5;
-			dR_Wl_j = dR_Wl_j_tmp;
-		    }
-		    if(dR_Wh_j_tmp < dR_Wh_j)
-		    {
-			Wh_closerjet_tmp = iak5;
-			dR_Wh_j = dR_Wh_j_tmp;
-		    }
-                }
+	//---apply basic selection on the CA8 jet
+	if(n_CA8_tmp < 1)
+	    continue;
+	//---select reco_ak5---
+	//---build reco object
+	lep_4vect_tmp.SetPtEtaPhiE(DT->lep_pt->at(good_lep_tmp),
+				   DT->lep_eta->at(good_lep_tmp),
+				   DT->lep_phi->at(good_lep_tmp),
+				   DT->lep_E_with_smearing->at(good_lep_tmp));
+	nu_4vect_tmp.SetPtEtaPhiM(DT->MET->at(0),0,DT->MET_phi->at(0),0);
+	nu_4vect_tmp = BuildNu4Vector (lep_4vect_tmp, nu_4vect_tmp, nu_pz_comp_type);
+	Wl_reco_4vect_tmp = lep_4vect_tmp + nu_4vect_tmp;
+	J_4vect_tmp.SetPtEtaPhiM(DT->jet_CA8_pt->at(good_CA8_tmp),
+				 DT->jet_CA8_eta->at(good_CA8_tmp),
+				 DT->jet_CA8_phi->at(good_CA8_tmp),
+				 DT->jet_CA8_mass_pruned->at(good_CA8_tmp));
+	G_reco_4vect_tmp = Wl_reco_4vect_tmp + J_4vect_tmp;
+	//---analyze ak5 jets
+	for(int iak5=0; iak5<DT->number_jet_ak5->at(0); iak5++)
+	{           
+	    //---remove W CA8_jet from ak5 collection 
+	    float dR_Wh_j_tmp = DeltaR(DT->jet_CA8_eta->at(good_CA8_tmp), DT->jet_ak5_eta->at(iak5),
+				       DT->jet_CA8_phi->at(good_CA8_tmp), DT->jet_ak5_phi->at(iak5));
+	    if(DT->jet_ak5_pt->at(iak5) > 30 && dR_Wh_j_tmp > 0.8 && DT->jet_ak5_eta->at(iak5) < 4.5)
+	    {            
+		ak5_tmp.push_back(iak5);
+		n_ak5_tmp++;
+		float dR_Wl_j_tmp = DeltaR(Wl_reco_4vect_tmp.Eta(), 
+					   DT->jet_ak5_eta->at(iak5),
+					   Wl_reco_4vect_tmp.Phi(), 
+					   DT->jet_ak5_phi->at(iak5));
+		if(dR_Wl_j_tmp < dR_Wl_j)
+		{
+		    Wl_closerjet_tmp = iak5;
+		    dR_Wl_j = dR_Wl_j_tmp;
+		}
+		if(dR_Wh_j_tmp < dR_Wh_j)
+		{
+		    Wh_closerjet_tmp = iak5;
+		    dR_Wh_j = dR_Wh_j_tmp;
+		}
 	    }
 	}
-        //-----apply preselection cuts-----
-        if( n_lepl_tmp > 0 || n_lept_tmp != 1 || n_CA8_tmp < 1 || n_ak5_tmp < 2)
-        {
+	//---apply basic selection ak5 jets
+	if(n_ak5_tmp < 2)
             continue;
-        }
         countPSEvents++;
         //-----Store reco variables-----		
         //---leptons
@@ -436,15 +444,17 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
 	vbf_jet1_eta = vbf_j1_4vect_tmp.Eta();
 	vbf_jet1_phi = vbf_j1_4vect_tmp.Phi();
 	vbf_jet1_mass = vbf_j1_4vect_tmp.M();
+	vbf_jet1_btag = DT->jet_ak5_btag->at(ak5_tmp.at(0));
 	vbf_jet2_pt = vbf_j2_4vect_tmp.Pt();
 	vbf_jet2_eta = vbf_j2_4vect_tmp.Eta();
 	vbf_jet2_phi = vbf_j2_4vect_tmp.Phi();
 	vbf_jet2_mass = vbf_j2_4vect_tmp.M();
+	vbf_jet2_btag = DT->jet_ak5_btag->at(ak5_tmp.at(1));
 	vbf_jj_mass = (vbf_j1_4vect_tmp + vbf_j2_4vect_tmp).M();
 	vbf_jj_delta_R = DeltaR(vbf_jet1_eta, vbf_jet2_eta, 
 				vbf_jet1_phi, vbf_jet2_phi);
 	//-----Store gen variables-----
-/*        //---Select W's
+        //---Select W's
         if(sampleName.Contains("Z") == 0)
         {
             if(TMath::Sign(DT->lhe_W_pid->front(),DT->lhe_lep_flv->at(0)) == DT->lhe_W_pid->front()) 
@@ -457,44 +467,91 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
                 W_lep_tmp=0;
                 W_had_tmp=1;
             }
+	    gen_Wl_pt = DT->lhe_W_pt->at(W_lep_tmp);
+	    gen_Wl_eta = DT->lhe_W_eta->at(W_lep_tmp);
+	    gen_Wl_phi = DT->lhe_W_phi->at(W_lep_tmp);
+	    gen_Wl_mass = DT->lhe_W_mass->at(W_lep_tmp);
+	    gen_Wh_pt = DT->lhe_W_pt->at(W_lep_tmp);
+	    gen_Wh_eta = DT->lhe_W_eta->at(W_lep_tmp);
+	    gen_Wh_phi = DT->lhe_W_phi->at(W_lep_tmp);
+	    gen_Wh_mass = DT->lhe_W_mass->at(W_lep_tmp); 
+	    if(sampleName.Contains("Signal") == 1)
+		gen_X_mass = DT->lhe_X_mass->at(0);
+	}
+	//---leptons
+	gen_lep_pt = DT->lhe_lep_pt->at(0);
+	gen_lep_eta = DT->lhe_lep_eta->at(0);
+	gen_lep_phi = DT->lhe_lep_phi->at(0);
+	gen_nu_pt = DT->lhe_nu_pt->at(0);
+	gen_nu_eta = DT->lhe_nu_eta->at(0);
+	gen_nu_phi = DT->lhe_nu_phi->at(0);
+	//---order quark wrt pt
+	ord_quark_tmp.push_back(DT->lhe_p_pt->at(0));
+	for(int iPart=1; iPart<DT->lhe_p_pt->size(); iPart++)
+	{
+	    bool insert=0;
+	    for(int iq=0; iq<ord_quark_tmp.size(); iq++)
+	    {
+		if(DT->lhe_p_pt->at(iPart) > ord_quark_tmp.at(iq))
+		{
+		    ord_quark_tmp.insert(ord_quark_tmp.begin()+iq, iPart);
+		    insert = 1;
+		    break;
+		}
 	    }
-
-        //---tag quark (for W+jets they may also be glouns...)
-	q1_tmp = -1;
-	q2_tmp = -1;
-	q1_pt_tmp = -1;
-	q2_pt_tmp = -1;
-        for(int iPart=0; iPart<DT->lhe_p_pt->size(); iPart++)
-        {
-            if(DT->lhe_p_from_W->at(iPart) == 0) 
-                std_vect_tmp.push_back(DT->lhe_p_pt->at(iPart));
-        }
-        while(q2_pt_tmp == -1 && std_vect_tmp.size()>0)
-        {
-            max_tmp = max_element(std_vect_tmp.begin(), std_vect_tmp.end());
-            if (q1_pt_tmp == -1)
-            {
-                q1_pt_tmp = *max_tmp;
-                std_vect_tmp.erase(max_tmp);
-            }
-            else 
-		q2_pt_tmp = *max_tmp;
-        }
-        for(int iPart=0; iPart<DT->lhe_p_pt->size(); iPart++)
-        {
-            if(DT->lhe_p_pt->at(iPart) == q1_pt_tmp) q1_tmp = iPart;
-            else if(DT->lhe_p_pt->at(iPart) == q2_pt_tmp) q2_tmp = iPart;
-        }
-	if(q1_tmp == -1)
-	    q1_tmp = 0;
-	if(q2_tmp == -1)
-	    q2_tmp = 0;
-        TLorentzVector qq_vbf_4vect_tmp, q1_vbf_4vect_tmp, q2_vbf_4vect_tmp;
-        q1_vbf_4vect_tmp.SetPtEtaPhiM(DT->lhe_p_pt->at(q1_tmp),DT->lhe_p_eta->at(q1_tmp),
-                                      DT->lhe_p_phi->at(q1_tmp),0);
-        q2_vbf_4vect_tmp.SetPtEtaPhiM(DT->lhe_p_pt->at(q2_tmp),DT->lhe_p_eta->at(q2_tmp),
-                                      DT->lhe_p_phi->at(q2_tmp),0);
-        qq_vbf_4vect_tmp = q1_vbf_4vect_tmp + q2_vbf_4vect_tmp;*/
+	    if(insert == 0)
+		ord_quark_tmp.push_back(iPart);
+	}
+	//---quark from W
+	isFirst = 1;
+        for(int iPart=0; iPart<ord_quark_tmp.size(); iPart++)
+	{
+	    if(DT->lhe_p_from_W->at(iPart) == 1 && isFirst == 1)
+	    {
+		gen_W_q1_pt = DT->lhe_p_pt->at(iPart);
+		gen_W_q1_eta = DT->lhe_p_eta->at(iPart);
+		gen_W_q1_phi = DT->lhe_p_phi->at(iPart);
+		isFirst = 0;
+	    }
+	    else if(DT->lhe_p_from_W->at(iPart) == 1 && isFirst == 0)
+	    {
+		gen_W_q2_pt = DT->lhe_p_pt->at(iPart);
+		gen_W_q2_eta = DT->lhe_p_eta->at(iPart);
+		gen_W_q2_phi = DT->lhe_p_phi->at(iPart);
+		isFirst = -1;
+	    }
+	}
+	//---tag quark
+	isFirst = 1;
+        for(int iPart=0; iPart<ord_quark_tmp.size(); iPart++)
+	{
+	    if(DT->lhe_p_from_W->at(iPart) == 0 && isFirst == 1)
+	    {
+		gen_vbf_q1_pt = DT->lhe_p_pt->at(iPart);
+		gen_vbf_q1_eta = DT->lhe_p_eta->at(iPart);
+		gen_vbf_q1_phi = DT->lhe_p_phi->at(iPart);
+		gen_vbf_q1_btag = 0;
+		if(TMath::Abs(DT->lhe_p_flv->at(iPart)) == 5)
+		    gen_vbf_q1_btag = 1;
+		isFirst = 0;
+	    }
+	    else if(DT->lhe_p_from_W->at(iPart) == 0 && isFirst == 0)
+	    {
+		gen_vbf_q2_pt = DT->lhe_p_pt->at(iPart);
+		gen_vbf_q2_eta = DT->lhe_p_eta->at(iPart);
+		gen_vbf_q2_phi = DT->lhe_p_phi->at(iPart);
+		gen_vbf_q2_btag = 0;
+		if(TMath::Abs(DT->lhe_p_flv->at(iPart)) == 5)
+		    gen_vbf_q2_btag = 1;
+		isFirst = -1;
+	    }
+	}
+	vbf_qq_4vect_tmp.SetPtEtaPhiE(gen_vbf_q1_pt + gen_vbf_q2_pt,
+				      gen_vbf_q1_eta + gen_vbf_q2_eta,
+				      gen_vbf_q1_phi + gen_vbf_q2_phi,
+				      gen_vbf_q1_pt*TMath::CosH(gen_vbf_q1_eta)+
+				      gen_vbf_q2_pt*TMath::CosH(gen_vbf_q2_eta));
+	gen_vbf_qq_mass = vbf_qq_4vect_tmp.M();
 	ET->Fill();
     }    
     cout << "number of events that passed the preselection:  " << countPSEvents << endl;    
