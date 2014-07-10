@@ -1,4 +1,4 @@
-/*****************************************************************************************
+/***************************************************************************************** 
 
     c++ -O2 -lm `root-config --cflags --glibs` -o dumpLightNtuples dumpLightNtuples.cpp 
     
@@ -24,11 +24,12 @@
 #include "../include/delphes_tree.h"
 #include "../include/light_tree.h"
 
-#define gSIGMAttbar = 225.197*2
-#define ttbarBRlvjj = 0.44
-#define gSIGMAW4JETS = 211*2
-#define gSIGMAZ4JETS = 3053.71*2
-#define LUMI = 19250
+//---define global variables
+const float gSIGMAttbar = 225.197*2;
+const float ttbarBRlvjj = 0.44;
+const float gSIGMAW4JETS = 211*2;
+const float gSIGMAZ4JETS = 3053.71*2;
+const float LUMI = 19250;
 
 using namespace std ;
 
@@ -254,7 +255,7 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
 	DT->Init(ch, true);
     else 
 	DT->Init(ch, false);
-    TFile* outFile = TFile::Open("light_ntuples/"+sampleName+".root", "recreate");
+    TFile* outFile = TFile::Open("/afs/cern.ch/user/s/spigazzi/work/EXOVBF/Delphes-Analysis/light_ntuples/"+sampleName+".root", "recreate");
     outFile->cd();
     TTree* ET = new TTree("light_tree", "light_tree");
     InitLightTree(ET);
@@ -264,7 +265,7 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
     if(sampleName.Contains("W4jets"))
 	scale = gSIGMAW4JETS/(ch->GetNtrees()*50000);
     if(sampleName.Contains("Z4jets"))
-	scale = gSIGMAZ4JETS/(ch->GetNtrees()*50000);
+	scale = gSIGMAZ4JETS/(ch->GetNtrees()*10000);
 
 //-----------------Events loop------------------------------------------------------------
  
@@ -290,7 +291,8 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
 	dR_Wh_j = 100;
         //---Reco leptonic object
         TLorentzVector lep_4vect_tmp, nu_4vect_tmp, J_4vect_tmp, Wl_reco_4vect_tmp, G_reco_4vect_tmp;
-        TLorentzVector vbf_j1_4vect_tmp, vbf_j2_4vect_tmp, vbf_qq_4vect_tmp;
+        TLorentzVector vbf_j1_4vect_tmp, vbf_j2_4vect_tmp;
+	TLorentzVector vbf_q1_4vect_tmp, vbf_q2_4vect_tmp;
         TLorentzVector Wl_closerj_4vect_tmp, Wh_closerj_4vect_tmp;
         //------------------Preselection--------------------------------------------------
         //---PV selection---
@@ -451,6 +453,7 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
 	vbf_jet2_mass = vbf_j2_4vect_tmp.M();
 	vbf_jet2_btag = DT->jet_ak5_btag->at(ak5_tmp.at(1));
 	vbf_jj_mass = (vbf_j1_4vect_tmp + vbf_j2_4vect_tmp).M();
+	vbf_jj_delta_phi = DeltaPhi(vbf_jet1_phi, vbf_jet2_phi); 
 	vbf_jj_delta_R = DeltaR(vbf_jet1_eta, vbf_jet2_eta, 
 				vbf_jet1_phi, vbf_jet2_phi);
 	//-----Store gen variables-----
@@ -482,9 +485,12 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
 	gen_lep_pt = DT->lhe_lep_pt->at(0);
 	gen_lep_eta = DT->lhe_lep_eta->at(0);
 	gen_lep_phi = DT->lhe_lep_phi->at(0);
-	gen_nu_pt = DT->lhe_nu_pt->at(0);
-	gen_nu_eta = DT->lhe_nu_eta->at(0);
-	gen_nu_phi = DT->lhe_nu_phi->at(0);
+	if(sampleName.Contains("Z") == 0)
+	{
+	    gen_nu_pt = DT->lhe_nu_pt->at(0);
+	    gen_nu_eta = DT->lhe_nu_eta->at(0);
+	    gen_nu_phi = DT->lhe_nu_phi->at(0);
+	}
 	//---order quark wrt pt
 	ord_quark_tmp.push_back(DT->lhe_p_pt->at(0));
 	for(int iPart=1; iPart<DT->lhe_p_pt->size(); iPart++)
@@ -503,22 +509,25 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
 		ord_quark_tmp.push_back(iPart);
 	}
 	//---quark from W
-	isFirst = 1;
-        for(int iPart=0; iPart<ord_quark_tmp.size(); iPart++)
+	if(sampleName.Contains("Z") == 0)
 	{
-	    if(DT->lhe_p_from_W->at(iPart) == 1 && isFirst == 1)
+	    isFirst = 1;
+	    for(int iPart=0; iPart<ord_quark_tmp.size(); iPart++)
 	    {
-		gen_W_q1_pt = DT->lhe_p_pt->at(iPart);
-		gen_W_q1_eta = DT->lhe_p_eta->at(iPart);
-		gen_W_q1_phi = DT->lhe_p_phi->at(iPart);
-		isFirst = 0;
-	    }
-	    else if(DT->lhe_p_from_W->at(iPart) == 1 && isFirst == 0)
-	    {
-		gen_W_q2_pt = DT->lhe_p_pt->at(iPart);
-		gen_W_q2_eta = DT->lhe_p_eta->at(iPart);
-		gen_W_q2_phi = DT->lhe_p_phi->at(iPart);
-		isFirst = -1;
+		if(DT->lhe_p_from_W->at(iPart) == 1 && isFirst == 1)
+		{
+		    gen_W_q1_pt = DT->lhe_p_pt->at(iPart);
+		    gen_W_q1_eta = DT->lhe_p_eta->at(iPart);
+		    gen_W_q1_phi = DT->lhe_p_phi->at(iPart);
+		    isFirst = 0;
+		}
+		else if(DT->lhe_p_from_W->at(iPart) == 1 && isFirst == 0)
+		{
+		    gen_W_q2_pt = DT->lhe_p_pt->at(iPart);
+		    gen_W_q2_eta = DT->lhe_p_eta->at(iPart);
+		    gen_W_q2_phi = DT->lhe_p_phi->at(iPart);
+		    isFirst = -1;
+		}
 	    }
 	}
 	//---tag quark
@@ -546,12 +555,14 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
 		isFirst = -1;
 	    }
 	}
-	vbf_qq_4vect_tmp.SetPtEtaPhiE(gen_vbf_q1_pt + gen_vbf_q2_pt,
-				      gen_vbf_q1_eta + gen_vbf_q2_eta,
-				      gen_vbf_q1_phi + gen_vbf_q2_phi,
-				      gen_vbf_q1_pt*TMath::CosH(gen_vbf_q1_eta)+
-				      gen_vbf_q2_pt*TMath::CosH(gen_vbf_q2_eta));
-	gen_vbf_qq_mass = vbf_qq_4vect_tmp.M();
+	vbf_q1_4vect_tmp.SetPtEtaPhiM(gen_vbf_q1_pt, gen_vbf_q1_eta,
+				      gen_vbf_q1_phi, 0);
+	vbf_q2_4vect_tmp.SetPtEtaPhiM(gen_vbf_q2_pt, gen_vbf_q2_eta,
+				      gen_vbf_q2_phi, 0);
+	gen_vbf_qq_mass = (vbf_q1_4vect_tmp + vbf_q2_4vect_tmp).M();
+	gen_vbf_qq_delta_phi = DeltaPhi(gen_vbf_q1_phi, gen_vbf_q2_phi);
+	gen_vbf_qq_delta_R = DeltaR(gen_vbf_q1_eta, gen_vbf_q2_eta,
+				    gen_vbf_q1_phi, gen_vbf_q2_phi);
 	ET->Fill();
     }    
     cout << "number of events that passed the preselection:  " << countPSEvents << endl;    

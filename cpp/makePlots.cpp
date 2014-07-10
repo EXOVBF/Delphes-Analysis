@@ -23,10 +23,6 @@
 
 #include "../include/delphes_tree.h"
 
-//#define gSIGMAMG800 = 
-#define gSIGMAW4JETS = 211
-#define gSIGMAZgJETS = 3053.71
-
 using namespace std ;
 
 //****************************************************************************************

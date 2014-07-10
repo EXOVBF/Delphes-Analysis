@@ -1,0 +1,20 @@
+# lines beginning with '# ' are comments
+# C cut_number cut_label \n cut_value
+C 0 no_cut
+
+C 1 Wh_mass_window
+CA8_jet_mass > 65 && CA8_jet_mass < 105 
+C 2 Wl_mass_window
+lv_mass > 65 && lv_mass < 105 
+C 3 Wl_boosted
+lv_pt > 200
+C 4 b_veto 
+vbf_jet1_btag < 0.5 && vbf_jet2_btag < 0.5
+C 5 top_mass_veto 
+lv_closerjet_mass > 200 && CA8_closerjet_mass > 210
+C 6 W_tagger
+CA8_jet_t2t1 < 0.5
+C 7 vbf_topology
+TMath::Abs(vbf_jet1_eta - vbf_jet2_eta) > 2.5 && vbf_jj_mass > 250 
+C 8 b_tag
+vbf_jet1_btag > 0.5 && vbf_jet2_btag > 0.5
