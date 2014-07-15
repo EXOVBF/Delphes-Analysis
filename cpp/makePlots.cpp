@@ -395,53 +395,58 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName, map<TStrin
                 n_lepl_tmp++;
             }
         }
+        //---select good ak5---
+	float pt_sum=1000;
+	ak5_tmp.push_back(0);
+	ak5_tmp.push_back(0);
+	TLorentzVector jj_Wh_4vect_tmp, j1_Wh_4vect_tmp, j2_Wh_4vect_tmp;
+        for(int iak5=0; iak5<DT.number_jet_ak5->at(0); iak5++)
+        {
+	    if(fabs(DT.jet_ak5_eta->at(iak5)) > 2.4)
+		continue;
+            j1_Wh_4vect_tmp.SetPtEtaPhiM(DT.jet_ak5_pt->at(iak5), DT.jet_ak5_eta->at(iak5),
+                                          DT.jet_ak5_phi->at(iak5), DT.jet_ak5_mass_pruned->at(iak5));
+	    for(int i=iak5+1; i<DT.number_jet_ak5->at(0); i++)
+            {
+		if(fabs(DT.jet_ak5_eta->at(i)) > 2.4)
+		    continue;
+	        j2_Wh_4vect_tmp.SetPtEtaPhiM(DT.jet_ak5_pt->at(i), DT.jet_ak5_eta->at(i),
+					      DT.jet_ak5_phi->at(i), DT.jet_ak5_mass_pruned->at(i));
+                jj_Wh_4vect_tmp = j1_Wh_4vect_tmp + j2_Wh_4vect_tmp;
+		if(TMath::Abs(jj_Wh_4vect_tmp.M()-80) < pt_sum)
+		{
+		    ak5_tmp.at(0) = iak5;
+		    ak5_tmp.at(1) = i;
+		    pt_sum = TMath::Abs(jj_Wh_4vect_tmp.M()-80);
+		    n_ak5_tmp = 2;
+		}
+	    }
+	}
+	if(n_ak5_tmp < 2)
+	    continue;
+	j1_Wh_4vect_tmp.SetPtEtaPhiM(DT.jet_ak5_pt->at(ak5_tmp.at(0)), DT.jet_ak5_eta->at(ak5_tmp.at(0)),
+				     DT.jet_ak5_phi->at(ak5_tmp.at(0)), DT.jet_ak5_mass_pruned->at(ak5_tmp.at(0)));
+	j2_Wh_4vect_tmp.SetPtEtaPhiM(DT.jet_ak5_pt->at(ak5_tmp.at(1)), DT.jet_ak5_eta->at(ak5_tmp.at(1)),
+				     DT.jet_ak5_phi->at(ak5_tmp.at(1)), DT.jet_ak5_mass_pruned->at(ak5_tmp.at(1)));
+	jj_Wh_4vect_tmp = j1_Wh_4vect_tmp + j2_Wh_4vect_tmp;
         //---select reco_CA8---
         int good_CA8=-1;
         for(int iCA8=0; iCA8<DT.number_jet_CA8->at(0); iCA8++)
         {
-//            if( DT.jet_CA8_pt->at(iCA8) > 200 && abs(DT.jet_CA8_eta->at(iCA8)) < 2.4 )
-	    if( DT.jet_CA8_mass_pruned->at(iCA8) > 65 && DT.jet_CA8_mass_pruned->at(iCA8) < 105 && 
-		DT.jet_CA8_pt->at(iCA8) > 200 && abs(DT.jet_CA8_eta->at(iCA8)) < 2.4 )
+	    deltaR_jets_tmp = TMath::Sqrt(pow(DT.jet_CA8_eta->at(iCA8)-jj_Wh_4vect_tmp.Eta(),2) +
+					  pow(DeltaPhi(DT.jet_CA8_phi->at(iCA8), jj_Wh_4vect_tmp.Phi()),2));
+            if( DT.jet_CA8_pt->at(iCA8) > 30 && fabs(DT.jet_CA8_eta->at(iCA8)) < 2.4 
+		&& deltaR_jets_tmp < 0.8 )
+//	    if( DT.jet_CA8_mass_pruned->at(iCA8) > 65 && DT.jet_CA8_mass_pruned->at(iCA8) < 105 && 
+//		DT.jet_CA8_pt->at(iCA8) > 30 && fabs(DT.jet_CA8_eta->at(iCA8)) < 2.4 )
             {
                 CA8_tmp.push_back(iCA8);
                 n_CA8_tmp++;
             }
-        }/*
-        if(n_CA8_tmp>1)
-        {
-            for(int iCA8=0; iCA8<CA8_tmp.size(); iCA8++)
-            {
-                int Ws_ak5[2]={-1,-1};
-                for(int iak5=0; iak5<DT.number_jet_ak5->at(0); iak5++)
-                {           
-                    deltaR_jets_tmp = TMath::Sqrt(pow(DT.jet_CA8_eta->at(CA8_tmp.at(iCA8))-DT.jet_ak5_eta->at(iak5),2) +
-                                                  pow(DeltaPhi(DT.jet_CA8_phi->at(CA8_tmp.at(iCA8)),DT.jet_ak5_phi->at(iak5)),2));
-                    if( DT.jet_ak5_pt->at(iak5) > 30 && deltaR_jets_tmp < 0.8)
-                    {                 
-                        if(Ws_ak5[0] == -1) Ws_ak5[0]=iak5;
-                        else if (Ws_ak5[1] == -1) Ws_ak5[1]=iak5;
-                        else break;
-                    }
-                }
-                if(Ws_ak5[0] != -1 && Ws_ak5[1] == -1 && DT.jet_ak5_mass_pruned->at(Ws_ak5[0]) > 65 &&
-                   DT.jet_ak5_mass_pruned->at(Ws_ak5[0]) < 105 && good_CA8 == -1)
-                {
-                    good_CA8 = CA8_tmp.at(iCA8);
-                }
-                else if(Ws_ak5[0] != -1 && Ws_ak5[1] != -1)
-                {
-                    TLorentzVector jj_vbf_4vect_tmp, j1_vbf_4vect_tmp, j2_vbf_4vect_tmp;
-                    j1_vbf_4vect_tmp.SetPtEtaPhiM(DT.jet_ak5_pt->at(Ws_ak5[0]), DT.jet_ak5_eta->at(Ws_ak5[0]),
-                                                  DT.jet_ak5_phi->at(Ws_ak5[0]), DT.jet_ak5_mass_pruned->at(Ws_ak5[0]));
-                    j2_vbf_4vect_tmp.SetPtEtaPhiM(DT.jet_ak5_pt->at(Ws_ak5[1]), DT.jet_ak5_eta->at(Ws_ak5[1]),
-                                                  DT.jet_ak5_phi->at(Ws_ak5[1]), DT.jet_ak5_mass_pruned->at(Ws_ak5[1]));
-                    jj_vbf_4vect_tmp = j1_vbf_4vect_tmp + j2_vbf_4vect_tmp;
-                    if(jj_vbf_4vect_tmp.M() > 65 && jj_vbf_4vect_tmp.M() < 105 && good_CA8 == -1) 
-                        good_CA8 = CA8_tmp.at(iCA8);
-                }
-            }
-	    }*/
-        if(good_CA8 == -1 && n_CA8_tmp > 0) good_CA8 = CA8_tmp.at(0);
+        }
+        if(good_CA8 == -1 && n_CA8_tmp > 0) 
+	    good_CA8 = CA8_tmp.at(0);
+	/*
         if(n_CA8_tmp > 0)
         {
             for(int iak5=0; iak5<DT.number_jet_ak5->at(0); iak5++)
@@ -458,28 +463,6 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName, map<TStrin
                 }
                 if(histos_1D["nc_jet_ak5_eta"]) histos_1D["nc_jet_ak5_eta"]->Fill(DT.jet_ak5_eta->at(iak5));        
             }
-	}
-        //---select good ak5---
-	/*
-        for(int iak5=0; iak5<ak5_tmp.size(); iak5++)
-        {
-	    bool fromW=false;
-	    TLorentzVector jj_vbf_4vect_tmp, j1_vbf_4vect_tmp, j2_vbf_4vect_tmp;
-            j1_vbf_4vect_tmp.SetPtEtaPhiM(DT.jet_ak5_pt->at(ak5_tmp.at(iak5)), DT.jet_ak5_eta->at(ak5_tmp.at(iak5)),
-                                          DT.jet_ak5_phi->at(ak5_tmp.at(iak5)), DT.jet_ak5_mass_pruned->at(ak5_tmp.at(iak5)));
-	    for(int i=ak5_tmp.at(iak5)+1; i<DT.number_jet_ak5->at(0); i++)
-            {
-	        j2_vbf_4vect_tmp.SetPtEtaPhiM(DT.jet_ak5_pt->at(i), DT.jet_ak5_eta->at(i),
-					      DT.jet_ak5_phi->at(i), DT.jet_ak5_mass_pruned->at(i));
-                jj_vbf_4vect_tmp = j1_vbf_4vect_tmp + j2_vbf_4vect_tmp;
-		if(jj_vbf_4vect_tmp.M() > 65 && jj_vbf_4vect_tmp.M() < 105)
-		    fromW = true;
-	    }
-	    if((DT.jet_ak5_mass_pruned->at(iak5) > 65 && DT.jet_ak5_mass_pruned->at(iak5) < 105) || fromW)
-	    {
-		n_ak5_tmp--;
-		ak5_tmp.erase(ak5_tmp.begin()+iak5);
-	    }
 	    }*/
         //---gen_ak5 nc plots---
         for(int iak5=0; iak5<DT.number_gen_jet_ak5->at(0); iak5++)
@@ -529,6 +512,7 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName, map<TStrin
             deltaR_Wl = TMath::Sqrt(pow(DT.lhe_W_eta->at(W_lep_tmp)-DT.lep_eta->at(good_lep_tmp),2)+
                                     pow(DeltaPhi(DT.lhe_W_phi->at(W_lep_tmp),DT.lep_phi->at(good_lep_tmp)),2));
         }
+/*
         //---hadronic W matching (don't do this for W+jets)
         if(DT.lhe_W_pt->size() == 2)
         {
@@ -545,7 +529,7 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName, map<TStrin
             if(histos_2D["ps_gen_WJ_deltaR_vs_ptRatio"])
 		histos_2D["ps_gen_WJ_deltaR_vs_ptRatio"]->Fill(DT.gen_jet_CA8_pt->at(good_CA8)/DT.lhe_W_pt->at(W_had_tmp),
 							       deltaR_Wjgen);
-        }
+							       }*/
 	//---quark from W
 	for(int iPart=0; iPart<DT.lhe_p_pt->size(); iPart++)
         {
@@ -579,30 +563,35 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName, map<TStrin
 							     pow(DeltaPhi(DT.lhe_p_phi->at(q2_tmp), 
 							     DT.lhe_p_phi->at(q1_tmp)),2)));
 	//---ak5 from W
-	TLorentzVector W_jj;
-	W_jj.SetPtEtaPhiM(DT.jet_ak5_pt->at(0)+DT.jet_ak5_pt->at(1),
-			  DT.jet_ak5_eta->at(0)+DT.jet_ak5_eta->at(1),
-			  DT.jet_ak5_phi->at(0)+DT.jet_ak5_phi->at(1),
-			  DT.jet_ak5_mass_pruned->at(0)+DT.jet_ak5_mass_pruned->at(1));
+	TLorentzVector W_jj, W_j1, W_j2;
+	W_j1.SetPtEtaPhiM(DT.jet_ak5_pt->at(ak5_tmp.at(0)),
+			  DT.jet_ak5_eta->at(ak5_tmp.at(0)),
+			  DT.jet_ak5_phi->at(ak5_tmp.at(0)),
+			  DT.jet_ak5_mass_pruned->at(ak5_tmp.at(0)));
+	W_j2.SetPtEtaPhiM(DT.jet_ak5_pt->at(ak5_tmp.at(1)),
+			  DT.jet_ak5_eta->at(ak5_tmp.at(1)),
+			  DT.jet_ak5_phi->at(ak5_tmp.at(1)),
+			  DT.jet_ak5_mass_pruned->at(ak5_tmp.at(1)));
+	W_jj = W_j1+W_j2;
 	if(histos_1D["ps_W_jj_M_pruned"])
             histos_1D["ps_W_jj_M_pruned"]->Fill(W_jj.M());
-	if(histos_1D["ps_W_jj_deltaR"] && W_jj.M() > 65 && W_jj.M() < 105)
-	    histos_1D["ps_W_jj_deltaR"]->Fill(TMath::Sqrt(pow(TMath::Abs(DT.jet_ak5_eta->at(0) - 
-									    DT.jet_ak5_eta->at(1)),2)+
-							     pow(DeltaPhi(DT.jet_ak5_phi->at(0), 
-							     DT.jet_ak5_phi->at(1)),2)));
+	if(histos_1D["ps_W_jj_deltaR"])
+	    histos_1D["ps_W_jj_deltaR"]->Fill(TMath::Sqrt(pow(TMath::Abs(DT.jet_ak5_eta->at(ak5_tmp.at(0)) - 
+									 DT.jet_ak5_eta->at(ak5_tmp.at(1))),2)+
+							  pow(DeltaPhi(DT.jet_ak5_phi->at(ak5_tmp.at(0)), 
+								       DT.jet_ak5_phi->at(ak5_tmp.at(1))),2)));
 	if(histos_1D["ps_W_q2j2_delta_phi"] && W_jj.M() > 65 && W_jj.M() < 105)
             histos_1D["ps_W_q2j2_delta_phi"]->Fill(DeltaPhi(DT.lhe_p_phi->at(q2_tmp), 
-							    DT.jet_ak5_phi->at(1)));
+							    DT.jet_ak5_phi->at(ak5_tmp.at(1))));
 	if(histos_1D["ps_W_q2j2_delta_eta"] && W_jj.M() > 65 && W_jj.M() < 105)
             histos_1D["ps_W_q2j2_delta_eta"]->Fill(TMath::Abs(DT.lhe_p_eta->at(q2_tmp) - 
-							      DT.jet_ak5_eta->at(1)));
+							      DT.jet_ak5_eta->at(ak5_tmp.at(1))));
 	if(histos_1D["ps_W_q1j1_delta_phi"] && W_jj.M() > 65 && W_jj.M() < 105)
             histos_1D["ps_W_q1j1_delta_phi"]->Fill(DeltaPhi(DT.lhe_p_phi->at(q1_tmp), 
-							    DT.jet_ak5_phi->at(0)));
+							    DT.jet_ak5_phi->at(ak5_tmp.at(0))));
 	if(histos_1D["ps_W_q1j1_delta_eta"] && W_jj.M() > 65 && W_jj.M() < 105)
-            histos_1D["ps_W_q1j1_delta_eta"]->Fill(TMath::Abs(DT.lhe_p_eta->at(q1_tmp) - 
-							      DT.jet_ak5_eta->at(0)));
+            histos_1D["ps_W_q1j1_delta_eta"]->Fill(TMath::Abs(DT.lhe_p_eta->at(ak5_tmp.at(q1_tmp)) - 
+							      DT.jet_ak5_eta->at(ak5_tmp.at(0))));
         //---fat jet
         if(histos_1D["ps_jet_CA8_M_pruned"])
             histos_1D["ps_jet_CA8_M_pruned"]->Fill(DT.jet_CA8_mass_pruned->at(good_CA8));
@@ -675,7 +664,7 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName, map<TStrin
 	q2_pt_tmp = -1;
         for(int iPart=0; iPart<DT.lhe_p_pt->size(); iPart++)
         {
-            if(DT.lhe_p_from_W->at(iPart) == 0) 
+            if(DT.lhe_p_from_W->at(iPart) == 1) 
                 std_vect_tmp.push_back(DT.lhe_p_pt->at(iPart));
         }
         while(q2_pt_tmp == -1 && std_vect_tmp.size()>0)
@@ -727,12 +716,18 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName, map<TStrin
         if(histos_1D["ps_delta_R_qq_vbf"])
             histos_1D["ps_delta_R_qq_vbf"]->Fill(TMath::Sqrt(pow(TMath::Abs(DT.lhe_p_eta->at(q2_tmp) - 
 									    DT.lhe_p_eta->at(q1_tmp)),2)+
-							     pow(DeltaPhi(DT.lhe_p_phi->at(q2_tmp), 
+							     pow(DeltaPhi(DT.lhe_p_phi->at(q2_tmp),
 									  DT.lhe_p_phi->at(q1_tmp)),2)));
+	if(histos_2D["ps_Wpt_vs_deltaRqq"])
+	    histos_2D["ps_Wpt_vs_deltaRqq"]->Fill(TMath::Sqrt(pow(TMath::Abs(DT.lhe_p_eta->at(q2_tmp) - 
+									   DT.lhe_p_eta->at(q1_tmp)),2)+
+							    pow(DeltaPhi(DT.lhe_p_phi->at(q2_tmp), 
+									 DT.lhe_p_phi->at(q1_tmp)),2)),
+						DT.lhe_W_pt->at(W_had_tmp)); 
         //---ratio tag jet/tag quark
         if(histos_2D["ps_ratio_tag_j_q_vbf"])
-            histos_2D["ps_ratio_tag_j_q_vbf"]->Fill(DT.lhe_p_pt->at(q1_tmp)/DT.jet_ak5_pt->at(ak5_tmp.at(0)),
-                                                    DT.lhe_p_pt->at(q2_tmp)/DT.jet_ak5_pt->at(ak5_tmp.at(1)));
+            histos_2D["ps_ratio_tag_j_q_vbf"]->Fill(DT.lhe_p_pt->at(q1_tmp)/DT.jet_ak5_pt->at(0),//ak5_tmp.at(0)),
+                                                    DT.lhe_p_pt->at(q2_tmp)/DT.jet_ak5_pt->at(1));//ak5_tmp.at(1)));
         //---mlvJ
         J_4vect_tmp.SetPtEtaPhiM(DT.jet_CA8_pt->at(good_CA8),DT.jet_CA8_eta->at(good_CA8),
                                  DT.jet_CA8_phi->at(good_CA8),DT.jet_CA8_mass_pruned->at(good_CA8));

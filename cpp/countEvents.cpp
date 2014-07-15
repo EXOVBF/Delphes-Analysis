@@ -25,14 +25,14 @@
 #include "../include/light_tree.h"
 
 //---define global variables
-const float gSIGMAttbar = 225.197*2;
-const float ttbarBRlvjj = 0.44;
-const float gSIGMAW4JETS = 211*2;
-const float gSIGMAZ4JETS = 3053.71*2;
-const float gSIGMASTOPs = 3.79*2;
-const float gSIGMASTOPt = 56.4*2;
-const float gSIGMASTOPBARs = 1.76*2;
-const float gSIGMASTOPBARt = 30.7*2;
+const float gSIGMAttbar = 245.8;
+const float ttbarBR = 0.55;
+const float gSIGMAW4JETS = 263;
+const float gSIGMAZ4JETS = 3503;
+const float gSIGMASTOPs = 3.79;
+const float gSIGMASTOPt = 56.4;
+const float gSIGMASTOPBARs = 1.76;
+const float gSIGMASTOPBARt = 30.7;
 const float LUMI = 19250;
 
 using namespace std ;
@@ -54,7 +54,7 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
     cout << "read " << ch->GetEntries() << " events in " << ch->GetNtrees() 
          << " files of " << sampleName.Data() << " sample\n" ;
     if(sampleName.Contains("ttbar"))
-	scale = gSIGMAttbar*LUMI/(ch->GetNtrees()*10000*ttbarBRlvjj);
+	scale = gSIGMAttbar*LUMI/(ch->GetNtrees()*10000*ttbarBR);
     if(sampleName.Contains("W4jets"))
 	scale = gSIGMAW4JETS*LUMI/(ch->GetNtrees()*50000);
     if(sampleName.Contains("Z4jets"))

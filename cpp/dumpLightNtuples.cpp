@@ -1,4 +1,7 @@
 /***************************************************************************************** 
+    
+    this program apply the preselection cut on MC sample from Delphes and store
+    the good events in a tree with only the variables used in the analysis
 
     c++ -O2 -lm `root-config --cflags --glibs` -o dumpLightNtuples dumpLightNtuples.cpp 
     
@@ -233,6 +236,7 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
     float deltaR_jets_tmp=0;
     int n_CA8_tmp=0, n_ak5_tmp=0;
     int good_CA8_tmp=0;
+    vector<int> CA8_tmp;
     vector<int> ak5_tmp;
     //---Ws
     float W_lep_tmp=0, W_had_tmp=0;
@@ -260,12 +264,6 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
     TTree* ET = new TTree("light_tree", "light_tree");
     InitLightTree(ET);
     ET->SetDirectory(0);
-    if(sampleName.Contains("ttbar"))
-	scale = gSIGMAttbar/(ch->GetNtrees()*1000000*ttbarBRlvjj);
-    if(sampleName.Contains("W4jets"))
-	scale = gSIGMAW4JETS/(ch->GetNtrees()*50000);
-    if(sampleName.Contains("Z4jets"))
-	scale = gSIGMAZ4JETS/(ch->GetNtrees()*10000);
 
 //-----------------Events loop------------------------------------------------------------
  
@@ -286,10 +284,11 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
 	isFirst = 0;
         ord_quark_tmp.clear();
         good_CA8_tmp = 0;
+	CA8_tmp.clear();
         ak5_tmp.clear();
 	dR_Wl_j = 100;
-	dR_Wh_j = 100;
-        //---Reco leptonic object
+	dR_Wh_j = 100; 
+        //---Reco object
         TLorentzVector lep_4vect_tmp, nu_4vect_tmp, J_4vect_tmp, Wl_reco_4vect_tmp, G_reco_4vect_tmp;
         TLorentzVector vbf_j1_4vect_tmp, vbf_j2_4vect_tmp;
 	TLorentzVector vbf_q1_4vect_tmp, vbf_q2_4vect_tmp;
@@ -344,15 +343,16 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
 	//---select reco_CA8---
         for(int iCA8=0; iCA8<DT->number_jet_CA8->at(0); iCA8++)
         {
-            if( DT->jet_CA8_pt->at(iCA8) > 200 && abs(DT->jet_CA8_eta->at(iCA8)) < 2.4 )
-            {
-                good_CA8_tmp = iCA8;
-                n_CA8_tmp++;
-            }
+            if( DT->jet_CA8_pt->at(iCA8) > 30 && abs(DT->jet_CA8_eta->at(iCA8)) < 2.4 )
+	    {
+		CA8_tmp.push_back(iCA8);
+		n_CA8_tmp++;
+	    }
         }
 	//---apply basic selection on the CA8 jet
 	if(n_CA8_tmp < 1)
 	    continue;
+	good_CA8_tmp = CA8_tmp.at(0);
 	//---select reco_ak5---
 	//---build reco object
 	lep_4vect_tmp.SetPtEtaPhiE(DT->lep_pt->at(good_lep_tmp),
@@ -373,7 +373,7 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
 	    //---remove W CA8_jet from ak5 collection 
 	    float dR_Wh_j_tmp = DeltaR(DT->jet_CA8_eta->at(good_CA8_tmp), DT->jet_ak5_eta->at(iak5),
 				       DT->jet_CA8_phi->at(good_CA8_tmp), DT->jet_ak5_phi->at(iak5));
-	    if(DT->jet_ak5_pt->at(iak5) > 30 && dR_Wh_j_tmp > 0.8 && DT->jet_ak5_eta->at(iak5) < 4.5)
+	    if(DT->jet_ak5_pt->at(iak5) > 30 && dR_Wh_j_tmp > 0.8 && DT->jet_ak5_eta->at(iak5) < 4.7)
 	    {            
 		ak5_tmp.push_back(iak5);
 		n_ak5_tmp++;
@@ -412,6 +412,7 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
 	lv_phi = Wl_reco_4vect_tmp.Phi();
 	lv_delta_R = DeltaR(lep_4vect_tmp.Eta(), nu_4vect_tmp.Eta(),
 			    lep_4vect_tmp.Phi(), nu_4vect_tmp.Phi());
+	lv_Mt = TMath::Sqrt(lep_pt*MET*(1-TMath::Cos(DeltaPhi(lep_phi, MET_phi))));
 	//---Wl closerjet
 	Wl_closerj_4vect_tmp.SetPtEtaPhiM(DT->jet_ak5_pt->at(Wl_closerjet_tmp),
 					  DT->jet_ak5_eta->at(Wl_closerjet_tmp),
@@ -431,6 +432,10 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
 					  DT->jet_ak5_phi->at(Wh_closerjet_tmp),
 					  DT->jet_ak5_mass_pruned->at(Wh_closerjet_tmp));
 	CA8_closerjet_mass = (J_4vect_tmp + Wh_closerj_4vect_tmp).M();
+	//---Object separation
+	lv_J_delta_phi = DeltaPhi(lv_phi, CA8_jet_phi);
+	MET_J_delta_phi = DeltaPhi(MET_phi, CA8_jet_phi);
+	l_J_delta_R = DeltaR(lep_eta, CA8_jet_eta, lep_phi, CA8_jet_phi);
         //---mlvJ
 	lvJ_mass = G_reco_4vect_tmp.M();
 	//---vbf jets
@@ -492,13 +497,13 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
 	    gen_nu_phi = DT->lhe_nu_phi->at(0);
 	}
 	//---order quark wrt pt
-	ord_quark_tmp.push_back(DT->lhe_p_pt->at(0));
+	ord_quark_tmp.push_back(0);
 	for(int iPart=1; iPart<DT->lhe_p_pt->size(); iPart++)
 	{
 	    bool insert=0;
 	    for(int iq=0; iq<ord_quark_tmp.size(); iq++)
 	    {
-		if(DT->lhe_p_pt->at(iPart) > ord_quark_tmp.at(iq))
+		if(DT->lhe_p_pt->at(iPart) > DT.lhe_p_pt->at(ord_quark_tmp.at(iq)))
 		{
 		    ord_quark_tmp.insert(ord_quark_tmp.begin()+iq, iPart);
 		    insert = 1;

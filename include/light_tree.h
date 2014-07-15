@@ -5,8 +5,6 @@
 using namespace std ;
 
 //-----Declaration of leaf types 
-//---global---
-float scale=1;
 //---gen---
 //---Ws 
 float gen_Wh_pt=0;
@@ -57,6 +55,7 @@ float lv_pt=0;
 float lv_eta=0;
 float lv_phi=0;
 float lv_delta_R=0;
+float lv_Mt=0;
 float lv_closerjet_mass=0;
 //---CA8 jet
 float CA8_jet_pt=0;
@@ -80,13 +79,15 @@ float vbf_jet2_btag=0;
 float vbf_jj_mass=0;
 float vbf_jj_delta_phi=0;
 float vbf_jj_delta_R=0;
+//---object separation
+float lv_J_delta_phi=0;
+float MET_J_delta_phi=0;
+float l_J_delta_R=0;
 //---lvj
 float lvJ_mass=0; 
 
 
 //-----Declaration of branches 
-//---global---
-TBranch* b_scale;
 //---gen---
 //---Ws 
 TBranch* b_gen_Wh_pt;
@@ -137,6 +138,7 @@ TBranch* b_lv_pt;
 TBranch* b_lv_eta;
 TBranch* b_lv_phi;
 TBranch* b_lv_delta_R;
+TBranch* b_lv_Mt;
 TBranch* b_lv_closerjet_mass;
 //---CA8 jet
 TBranch* b_CA8_jet_pt;
@@ -160,15 +162,17 @@ TBranch* b_vbf_jet2_btag;
 TBranch* b_vbf_jj_mass;
 TBranch* b_vbf_jj_delta_phi;
 TBranch* b_vbf_jj_delta_R;
-//---lvj
+//---object separation
+TBranch* b_lv_J_delta_phi;
+TBranch* b_MET_J_delta_phi;
+TBranch* b_l_J_delta_R;
+//---lvj 
 TBranch* b_lvJ_mass; 
 
 //****************************************************************************************
  
 void InitLightTree (TTree* fTree)
 {
-    //---global
-    fTree->Branch("scale", &scale, "scale/F");
     //---gen
     fTree->Branch("gen_Wh_pt", &gen_Wh_pt, "gen_Wh_pt/F");
     fTree->Branch("gen_Wh_eta", &gen_Wh_eta, "gen_Wh_eta/F");
@@ -213,6 +217,7 @@ void InitLightTree (TTree* fTree)
     fTree->Branch("lv_eta", &lv_eta, "lv_eta/F");
     fTree->Branch("lv_phi", &lv_phi, "lv_phi/F");
     fTree->Branch("lv_deltaR", &lv_delta_R, "lv_delta_R/F");
+    fTree->Branch("lv_Mt", &lv_Mt, "lv_Mt/F");
     fTree->Branch("lv_closerjet_mass", &lv_closerjet_mass, "lv_closerjet_mass/F");
     fTree->Branch("CA8_jet_pt", &CA8_jet_pt, "CA8_jet_pt/F");
     fTree->Branch("CA8_jet_eta", &CA8_jet_eta, "CA8_jet_eta/F");
@@ -234,6 +239,9 @@ void InitLightTree (TTree* fTree)
     fTree->Branch("vbf_jj_mass", &vbf_jj_mass, "vbf_jj_mass/F");
     fTree->Branch("vbf_jj_delta_phi", &vbf_jj_delta_phi, "vbf_jj_delta_phi/F");
     fTree->Branch("vbf_jj_delta_R", &vbf_jj_delta_R, "vbf_jj_delta_R/F");
+    fTree->Branch("lv_J_delta_phi", &lv_J_delta_phi, "lv_J_delta_phi/F");
+    fTree->Branch("MET_J_delta_phi", &MET_J_delta_phi, "MET_J_delta_phi/F");
+    fTree->Branch("l_J_delta_R", &l_J_delta_R, "l_J_delta_R/F");
     fTree->Branch("lvJ_mass", &lvJ_mass, "lvJ_mass/F"); 
 }
 
@@ -241,8 +249,6 @@ void InitLightTree (TTree* fTree)
   
 void SetLightTree (TTree* fTree)
 {
-    //---global
-    fTree->SetBranchAddress("scale", &scale, &b_scale);
     //---gen
     fTree->SetBranchAddress("gen_Wh_pt", &gen_Wh_pt, &b_gen_Wh_pt);
     fTree->SetBranchAddress("gen_Wh_eta", &gen_Wh_eta, &b_gen_Wh_eta);
@@ -283,10 +289,11 @@ void SetLightTree (TTree* fTree)
     fTree->SetBranchAddress("MET", &MET, &b_MET);
     fTree->SetBranchAddress("MET_phi", &MET_phi, &b_MET_phi);
     fTree->SetBranchAddress("lv_mass", &lv_mass, &b_lv_mass);
-    fTree->SetBranchAddress("lv_pt", &lv_pt, &b_lv_mass);
+    fTree->SetBranchAddress("lv_pt", &lv_pt, &b_lv_pt);
     fTree->SetBranchAddress("lv_eta", &lv_eta, &b_lv_eta);
     fTree->SetBranchAddress("lv_phi", &lv_phi, &b_lv_phi);
     fTree->SetBranchAddress("lv_deltaR", &lv_delta_R, &b_lv_delta_R);
+    fTree->SetBranchAddress("lv_Mt", &lv_Mt, &b_lv_Mt);
     fTree->SetBranchAddress("lv_closerjet_mass", &lv_closerjet_mass, &b_lv_closerjet_mass);
     fTree->SetBranchAddress("CA8_jet_pt", &CA8_jet_pt, &b_CA8_jet_pt);
     fTree->SetBranchAddress("CA8_jet_eta", &CA8_jet_eta, &b_CA8_jet_eta);
@@ -308,6 +315,9 @@ void SetLightTree (TTree* fTree)
     fTree->SetBranchAddress("vbf_jj_mass", &vbf_jj_mass, &b_vbf_jj_mass);
     fTree->SetBranchAddress("vbf_jj_delta_phi", &vbf_jj_delta_phi, &b_vbf_jj_delta_phi);
     fTree->SetBranchAddress("vbf_jj_delta_R", &vbf_jj_delta_R, &b_vbf_jj_delta_R);
+    fTree->SetBranchAddress("lv_J_delta_phi", &lv_J_delta_phi, &b_lv_J_delta_phi);
+    fTree->SetBranchAddress("MET_J_delta_phi", &MET_J_delta_phi, &b_MET_J_delta_phi);
+    fTree->SetBranchAddress("l_J_delta_R", &l_J_delta_R, &b_l_J_delta_R);
     fTree->SetBranchAddress("lvJ_mass", &lvJ_mass, &b_lvJ_mass);
 }
 
