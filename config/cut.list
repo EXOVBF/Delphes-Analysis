@@ -9,7 +9,7 @@ CA8_jet_mass > 65 && CA8_jet_mass < 105
 C 3 Wl_mass_window
 lv_mass > 65 && lv_mass < 105 
 C 4 boosted Ws
-lv_pt > 200 && CA8_jet_pt > 200
+CA8_jet_pt > 200 && lv_pt > 200
 C 5 b_veto 
 vbf_jet1_btag < 0.5 && vbf_jet2_btag < 0.5
 C 6 top_mass_veto 
@@ -19,4 +19,4 @@ CA8_jet_t2t1 < 0.5
 C 8 vbf_topology
 TMath::Abs(vbf_jet1_eta - vbf_jet2_eta) > 2.5 && vbf_jj_mass > 250 
 C 9 b_tag
-vbf_jet1_btag > 0.5 && vbf_jet2_btag > 0.5
+(vbf_jet1_btag > 0.5 || vbf_jet2_btag > 0.5)

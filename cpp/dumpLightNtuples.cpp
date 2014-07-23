@@ -27,13 +27,6 @@
 #include "../include/delphes_tree.h"
 #include "../include/light_tree.h"
 
-//---define global variables
-const float gSIGMAttbar = 225.197*2;
-const float ttbarBRlvjj = 0.44;
-const float gSIGMAW4JETS = 211*2;
-const float gSIGMAZ4JETS = 3053.71*2;
-const float LUMI = 19250;
-
 using namespace std ;
 
 //****************************************************************************************
@@ -271,7 +264,6 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
     {
         ch->GetEntry(iEvent);
         if (iEvent % 100000 == 0) cout << "reading event number " << iEvent << " / " << ch->GetEntries() << "\n" ;
-
         //---Reset---
         X_ver_tmp = 0;
         Y_ver_tmp = 0;
@@ -294,8 +286,11 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
 	TLorentzVector vbf_q1_4vect_tmp, vbf_q2_4vect_tmp;
         TLorentzVector Wl_closerj_4vect_tmp, Wh_closerj_4vect_tmp;
         //------------------Preselection--------------------------------------------------
+	//---only semileptonic events---
+	if(DT->lhe_lep_pt->size() < 1)
+	    continue;
         //---PV selection---
-        for(int iVertex=0; iVertex<DT->nPV->size(); iVertex++)
+        for(int iVertex=0; iVertex<DT->nPV->at(0); iVertex++)
         {
             //---choose highets pt^2 vertex
             if( DT->sum_pt_square->at(iVertex) > S_ver_tmp )
@@ -303,9 +298,11 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
                 X_ver_tmp = DT->vertex_X->at(iVertex);
                 Y_ver_tmp = DT->vertex_Y->at(iVertex);
                 Z_ver_tmp = DT->vertex_Z->at(iVertex);
+		S_ver_tmp = DT->sum_pt_square->at(iVertex);
             }
         }
-        //---Selec leptons from PV---        
+	nPV = DT->nPV->at(0);
+        //---Selec leptons from PV---
         for(int iLep=0; iLep<DT->lep_number->at(0); iLep++)
         {    
             d_xy_tmp = TMath::Sqrt(pow(X_ver_tmp - DT->lep_X_vertex->at(iLep),2) + pow(X_ver_tmp - DT->lep_X_vertex->at(iLep),2));
@@ -343,7 +340,11 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
 	//---select reco_CA8---
         for(int iCA8=0; iCA8<DT->number_jet_CA8->at(0); iCA8++)
         {
-            if( DT->jet_CA8_pt->at(iCA8) > 30 && abs(DT->jet_CA8_eta->at(iCA8)) < 2.4 )
+	    //---remove hard lepton from CA8 collection
+	    float dR_l_j_tmp = DeltaR(DT->lep_eta->at(good_lep_tmp), DT->jet_CA8_eta->at(iCA8),
+				      DT->lep_phi->at(good_lep_tmp), DT->jet_CA8_phi->at(iCA8));
+            if(DT->jet_CA8_pt->at(iCA8) > 150 && abs(DT->jet_CA8_eta->at(iCA8)) < 2.4 &&
+	       dR_l_j_tmp > 0.8)
 	    {
 		CA8_tmp.push_back(iCA8);
 		n_CA8_tmp++;
@@ -353,7 +354,6 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
 	if(n_CA8_tmp < 1)
 	    continue;
 	good_CA8_tmp = CA8_tmp.at(0);
-	//---select reco_ak5---
 	//---build reco object
 	lep_4vect_tmp.SetPtEtaPhiE(DT->lep_pt->at(good_lep_tmp),
 				   DT->lep_eta->at(good_lep_tmp),
@@ -367,13 +367,17 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
 				 DT->jet_CA8_phi->at(good_CA8_tmp),
 				 DT->jet_CA8_mass_pruned->at(good_CA8_tmp));
 	G_reco_4vect_tmp = Wl_reco_4vect_tmp + J_4vect_tmp;
-	//---analyze ak5 jets
+	//---select reco_ak5---
 	for(int iak5=0; iak5<DT->number_jet_ak5->at(0); iak5++)
 	{           
 	    //---remove W CA8_jet from ak5 collection 
-	    float dR_Wh_j_tmp = DeltaR(DT->jet_CA8_eta->at(good_CA8_tmp), DT->jet_ak5_eta->at(iak5),
-				       DT->jet_CA8_phi->at(good_CA8_tmp), DT->jet_ak5_phi->at(iak5));
-	    if(DT->jet_ak5_pt->at(iak5) > 30 && dR_Wh_j_tmp > 0.8 && DT->jet_ak5_eta->at(iak5) < 4.7)
+	    float dR_Wh_j_tmp = DeltaR(J_4vect_tmp.Eta(), DT->jet_ak5_eta->at(iak5), 
+				       J_4vect_tmp.Phi(), DT->jet_ak5_phi->at(iak5));
+	    //---remove hard lepton from ak5 collection
+	    float dR_l_j_tmp = DeltaR(lep_4vect_tmp.Eta(), DT->jet_ak5_eta->at(iak5),
+				      lep_4vect_tmp.Phi(), DT->jet_ak5_phi->at(iak5));
+	    if(DT->jet_ak5_pt->at(iak5) > 30 && DT->jet_ak5_eta->at(iak5) < 4.7 &&
+	       dR_Wh_j_tmp > 0.8 && dR_l_j_tmp > 0.5)
 	    {            
 		ak5_tmp.push_back(iak5);
 		n_ak5_tmp++;
@@ -503,7 +507,7 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
 	    bool insert=0;
 	    for(int iq=0; iq<ord_quark_tmp.size(); iq++)
 	    {
-		if(DT->lhe_p_pt->at(iPart) > DT.lhe_p_pt->at(ord_quark_tmp.at(iq)))
+	if(DT->lhe_p_pt->at(iPart) > DT->lhe_p_pt->at(ord_quark_tmp.at(iq)))
 		{
 		    ord_quark_tmp.insert(ord_quark_tmp.begin()+iq, iPart);
 		    insert = 1;

@@ -416,14 +416,14 @@ void delphes_tree::Init (TTree * tree, bool signal)
     fChain->SetBranchAddress("sum_pt_square", &sum_pt_square, &b_sum_pt_square);
     fChain->SetBranchAddress("gen_nPV", &gen_nPV, &b_gen_nPV);
     fChain->SetBranchAddress("gen_is_PU", &gen_is_PU, &b_gen_is_PU);
-    fChain->SetBranchAddress("photon_pt", &photon_pt, &b_photon_pt);
+/*    fChain->SetBranchAddress("photon_pt", &photon_pt, &b_photon_pt);
     fChain->SetBranchAddress("photon_eta", &photon_eta, &b_photon_eta);
     fChain->SetBranchAddress("photon_phi", &photon_phi, &b_photon_phi);
     fChain->SetBranchAddress("photon_E", &photon_E, &b_photon_E);
     fChain->SetBranchAddress("photon_isolation", &photon_isolation, &b_photon_isolation);
     fChain->SetBranchAddress("photon_n_particle_cone", &photon_n_particle_cone, &b_photon_n_particle_cone);
     fChain->SetBranchAddress("photon_number", &photon_number, &b_photon_number);
-    fChain->SetBranchAddress("photon_Hcal_over_Ecal", &photon_Hcal_over_Ecal, &b_photon_Hcal_over_Ecal);
+    fChain->SetBranchAddress("photon_Hcal_over_Ecal", &photon_Hcal_over_Ecal, &b_photon_Hcal_over_Ecal);*/
 }
 
 #endif 

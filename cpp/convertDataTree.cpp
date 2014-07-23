@@ -54,10 +54,10 @@ int main(int argc, char* argv[])
 {
 //-----------------Definitions------------------------------------------------------------
  
-    TFile* inFile = TFile::Open("tmp/data.root", "read");
+    TFile* inFile = TFile::Open("tmp/ofile_TTbar_Powheg.root", "read");
     data_tree* otree = new data_tree();
     otree->Init((TTree*)inFile->Get("otree"));
-    TFile* outFile = TFile::Open("light_ntuples/data.root", "recreate");
+    TFile* outFile = TFile::Open("light_ntuples/CMSSW_ttbar.root", "recreate");
     outFile->cd();
     TTree* ET = new TTree("light_tree", "light_tree");
     InitLightTree(ET);
@@ -67,7 +67,11 @@ int main(int argc, char* argv[])
 	if(iEntry % 100000 == 0)
 	    cout << "read " << iEntry << " / " << otree->GetEntries() << endl;
 	otree->GetEntry(iEntry);
-	//-----Store reco variables-----		
+	//-----Store reco variables-----
+	//---weight
+	evt_weight = otree->eff_and_pu_Weight*otree->btag_weight;
+	//---vertex
+	nPV = otree->nPV;
 	//---leptons
 	lep_pt = otree->l_pt;
 	lep_eta = otree->l_eta;

@@ -5,6 +5,8 @@
 using namespace std ;
 
 //-----Declaration of leaf types 
+//---global---
+float evt_weight=1;
 //---gen---
 //---Ws 
 float gen_Wh_pt=0;
@@ -85,9 +87,12 @@ float MET_J_delta_phi=0;
 float l_J_delta_R=0;
 //---lvj
 float lvJ_mass=0; 
-
+//---Vertecies
+float nPV=0;
 
 //-----Declaration of branches 
+//---global---
+TBranch* b_evt_weight;
 //---gen---
 //---Ws 
 TBranch* b_gen_Wh_pt;
@@ -168,11 +173,15 @@ TBranch* b_MET_J_delta_phi;
 TBranch* b_l_J_delta_R;
 //---lvj 
 TBranch* b_lvJ_mass; 
+//---Verticies
+TBranch* b_nPV;
 
 //****************************************************************************************
  
 void InitLightTree (TTree* fTree)
 {
+    //---global
+    fTree->Branch("evt_weight", &evt_weight, "evt_weight/F");
     //---gen
     fTree->Branch("gen_Wh_pt", &gen_Wh_pt, "gen_Wh_pt/F");
     fTree->Branch("gen_Wh_eta", &gen_Wh_eta, "gen_Wh_eta/F");
@@ -243,12 +252,15 @@ void InitLightTree (TTree* fTree)
     fTree->Branch("MET_J_delta_phi", &MET_J_delta_phi, "MET_J_delta_phi/F");
     fTree->Branch("l_J_delta_R", &l_J_delta_R, "l_J_delta_R/F");
     fTree->Branch("lvJ_mass", &lvJ_mass, "lvJ_mass/F"); 
+    fTree->Branch("nPV", &nPV, "nPV/F"); 
 }
 
 //****************************************************************************************
   
 void SetLightTree (TTree* fTree)
 {
+    //---global
+    fTree->SetBranchAddress("evt_weight", &evt_weight, &b_evt_weight);
     //---gen
     fTree->SetBranchAddress("gen_Wh_pt", &gen_Wh_pt, &b_gen_Wh_pt);
     fTree->SetBranchAddress("gen_Wh_eta", &gen_Wh_eta, &b_gen_Wh_eta);
@@ -319,5 +331,6 @@ void SetLightTree (TTree* fTree)
     fTree->SetBranchAddress("MET_J_delta_phi", &MET_J_delta_phi, &b_MET_J_delta_phi);
     fTree->SetBranchAddress("l_J_delta_R", &l_J_delta_R, &b_l_J_delta_R);
     fTree->SetBranchAddress("lvJ_mass", &lvJ_mass, &b_lvJ_mass);
+    fTree->SetBranchAddress("nPV", &nPV, &b_nPV);
 }
 

@@ -1,8 +1,8 @@
 /*****************************************************************************************
 
-    c++ -O2 -lm `root-config --cflags --glibs` -o makePlots makePlots.cpp 
+    c++ -O2 -lm `root-config --cflags --glibs` -o plotter plotter.cpp 
     
-    or exexute compile.sh makePlots
+    or exexute compile.sh plotter
 
 /****************************************************************************************/
 
@@ -220,34 +220,43 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName, map<TStrin
         }
 	if(n_lepl_tmp > 0 || n_lept_tmp != 1)
 	    continue;
+	//---select good gen CA8---
+        for(int iCA8=0; iCA8<DT.number_jet_CA8->at(0); iCA8++)
+        {
+	    float dR_l_j = DeltaR(DT.jet_CA8_eta->at(iCA8), DT.lep_eta->at(good_lep_tmp),
+				  DT.jet_CA8_phi->at(iCA8), DT.lep_phi->at(good_lep_tmp));
+	    if(DT.jet_CA8_pt->at(iCA8) > 200 && fabs(DT.jet_CA8_eta->at(iCA8)) < 2.4)
+            {
+                CA8_tmp.push_back(iCA8);
+                n_CA8_tmp++;
+            }
+        }
         //---select good ak5---
+	if(n_CA8_tmp < 1)
+	    continue;
+	int good_CA8 = CA8_tmp.at(0);
 	float pt_sum=1000;
 //	ak5_tmp.push_back(0);
 //	ak5_tmp.push_back(0);
 	TLorentzVector jj_Wh_4vect_tmp, j1_Wh_4vect_tmp, j2_Wh_4vect_tmp;
         for(int iak5=0; iak5<DT.number_jet_ak5->at(0); iak5++)
-        {
+        {/*
 	    if(fabs(DT.jet_ak5_eta->at(iak5)) > 4.7)
 		continue;
-//            j1_Wh_4vect_tmp.SetPtEtaPhiM(DT.jet_ak5_pt->at(iak5), DT.jet_ak5_eta->at(iak5),
-//					 DT.jet_ak5_phi->at(iak5), DT.jet_ak5_mass_pruned->at(iak5));
-/*
-	    for(int i=iak5+1; i<DT.number_jet_ak5->at(0); i++)
-            {
-		if(fabs(DT.jet_ak5_eta->at(i)) > 2.4)
-		    continue;
-	        j2_Wh_4vect_tmp.SetPtEtaPhiM(DT.jet_ak5_pt->at(i), DT.jet_ak5_eta->at(i),
-					      DT.jet_ak5_phi->at(i), DT.jet_ak5_mass_pruned->at(i));
-                jj_Wh_4vect_tmp = j1_Wh_4vect_tmp + j2_Wh_4vect_tmp;
-		if(TMath::Abs(jj_Wh_4vect_tmp.M()-80) < pt_sum)
-		{
-		    ak5_tmp.at(0) = iak5;
-		    ak5_tmp.at(1) = i;
-		    pt_sum = TMath::Abs(jj_Wh_4vect_tmp.M()-80);
-		    n_ak5_tmp = 2;
-		    }
-	    }*/
 	    if(n_ak5_tmp < 2 && DT.jet_ak5_btag->at(iak5) == 0)
+	    {
+		ak5_tmp.push_back(iak5);
+		n_ak5_tmp++;
+		}*/
+	    float deltaR_l_j = DeltaR(DT.jet_ak5_eta->at(iak5), DT.lep_eta->at(good_lep_tmp),
+				      DT.jet_ak5_phi->at(iak5), DT.lep_phi->at(good_lep_tmp));
+	    deltaR_jets_tmp = DeltaR(DT.jet_CA8_eta->at(good_CA8),
+				     DT.jet_ak5_eta->at(iak5),
+				     DT.jet_CA8_phi->at(good_CA8),
+				     DT.jet_ak5_phi->at(iak5));
+	    if(deltaR_jets_tmp > 0.8     
+	       && DT.jet_ak5_pt->at(iak5) > 30
+	       && DT.jet_ak5_btag->at(iak5) == 1)	
 	    {
 		ak5_tmp.push_back(iak5);
 		n_ak5_tmp++;
@@ -280,6 +289,23 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName, map<TStrin
 		q2_tmp = iPart; 
 		break;
 	    }
+	}	
+	if(n_ak5_tmp > 0)
+	{
+	    //---gen CA8
+	    if(histos_1D["ps_jet_CA8_pt"])
+		histos_1D["ps_jet_CA8_pt"]->Fill(DT.gen_jet_CA8_pt->at(good_CA8));
+	    if(histos_1D["ps_gen_jet_CA8_M"])
+		histos_1D["ps_gen_jet_CA8_M"]->Fill(DT.gen_jet_CA8_mass->at(good_CA8));
+	    if(histos_1D["ps_jet_CA8_M"])
+		histos_1D["ps_jet_CA8_M"]->Fill(DT.jet_CA8_mass->at(0));
+	    if(histos_1D["ps_gen_jet_CA8_M_pruned"])
+		histos_1D["ps_gen_jet_CA8_M_pruned"]->Fill(DT.gen_jet_CA8_mass_pruned->at(good_CA8));
+	    if(histos_1D["ps_jet_CA8_M_pruned"])
+		histos_1D["ps_jet_CA8_M_pruned"]->Fill(DT.jet_CA8_mass_pruned->at(0));
+	    if(histos_1D["ps_jet_CA8_tau2tau1"])
+		histos_1D["ps_jet_CA8_tau2tau1"]->Fill(DT.jet_CA8_tau2->at(good_CA8)/
+						       DT.jet_CA8_tau1->at(good_CA8));
 	}
 	if(n_ak5_tmp < 2 || q1_tmp == -1 || q2_tmp == -1)
 	    continue;
@@ -295,7 +321,7 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName, map<TStrin
 							     j2_Wh_4vect_tmp.Phi(), DT.lhe_p_phi->at(q2_tmp)),
 						      DeltaR(j1_Wh_4vect_tmp.Eta(), DT.lhe_p_eta->at(q1_tmp),
 							     j1_Wh_4vect_tmp.Phi(), DT.lhe_p_phi->at(q1_tmp)));
-	//---jets
+	//---ak5 jets
 	if(histos_1D["ps_W_j1_pt"])
 	    histos_1D["ps_W_j1_pt"]->Fill(j1_Wh_4vect_tmp.Pt());
 	if(histos_1D["ps_W_j1_eta"])
@@ -313,8 +339,10 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName, map<TStrin
 						     j2_Wh_4vect_tmp.Eta(),
 						     j1_Wh_4vect_tmp.Phi(),
 						     j2_Wh_4vect_tmp.Phi()));
-	if(histos_1D["ps_W_jj_M_pruned"])
+	if(histos_1D["ps_W_jj_M_pruned"] && jj_Wh_4vect_tmp.Pt() > 150)
 	   histos_1D["ps_W_jj_M_pruned"]->Fill(jj_Wh_4vect_tmp.M());
+	if(histos_1D["ps_W_jj_pt"] && jj_Wh_4vect_tmp.Pt() > 150)
+	   histos_1D["ps_W_jj_pt"]->Fill(jj_Wh_4vect_tmp.Pt());
 	//---quarks
 	if(histos_1D["ps_W_q1_pt"])
 	    histos_1D["ps_W_q1_pt"]->Fill(DT.lhe_p_pt->at(q1_tmp));
