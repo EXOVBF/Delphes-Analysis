@@ -1,4 +1,4 @@
-int variablePlotter()
+int variablePlotter_MC()
 {
     gROOT->Reset();
     gStyle->SetOptStat("");
@@ -79,7 +79,7 @@ int variablePlotter()
 	plot_conf >> S_buffer;
     }
     //TString all_cuts = "evt_weight*(";
-    TString all_cuts = " ";
+    TString all_cuts =" ";
     for(int iCut=0; iCut<cut_value.size(); iCut++)
     {
 	if(TString(cuts).Contains(cut_number.at(iCut)))
@@ -145,31 +145,17 @@ int variablePlotter()
 	    }
 	    cout << "total background: " << tot_bkg << endl;    
 	    //-----Draw-----
-	    if(histo_data)
-	    {
-		cout << "bkg/data ratio: " << tot_bkg/histo_data->GetEntries() << endl;
-		for(int iBin=1; iBin<histo_data->GetNbinsX(); iBin++)
-		{
-		    data_point->SetPoint(iBin-1, 
-					 histo_data->GetBinCenter(iBin),
-					 histo_data->GetBinContent(iBin));
-		}
-		data_point->SetMarkerColor(kBlack);
-		data_point->SetMarkerStyle(20);
-		data_point->SetMarkerSize(1);
-	    }
-	    stack->Draw("goff");
-	    stack->GetXaxis()->SetTitle(x_title);
-	    stack->GetYaxis()->SetTitle(y_title);
-	    stack->SetMinimum(0);
-	    stack->SetMaximum(histo_errors->GetBinError(histo_errors->GetMaximumBin())+
-			      histo_errors->GetMaximum());
-	    gPad->Update();
 	    histo_errors->SetLineColor(kBlack);
 	    histo_errors->SetMarkerStyle(20);
 	    histo_errors->SetMarkerSize(0.7);
 	    histo_data->SetFillColor(kGreen);
-	    histo_data->Draw("histsame");
+	    histo_data->Draw("hist");	    
+	    histo_data->GetXaxis()->SetTitle(x_title);
+	    histo_data->GetYaxis()->SetTitle(y_title);
+	    histo_data->SetMinimum(0);
+	    histo_data->SetMaximum(histo_errors->GetBinError(histo_errors->GetMaximumBin())+
+				   histo_errors->GetMaximum());
+	    gPad->Update();
 	    histo_errors->Draw("E1same");
 	    TLegend* lg = new TLegend(0.7, 0.6, 0.85, 0.85);
 	    lg->SetBorderSize(0);

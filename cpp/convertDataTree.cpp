@@ -54,10 +54,10 @@ int main(int argc, char* argv[])
 {
 //-----------------Definitions------------------------------------------------------------
  
-    TFile* inFile = TFile::Open("tmp/ofile_TTbar_Powheg.root", "read");
+    TFile* inFile = TFile::Open("tmp/ofile_TTbar_Powheg_mu.root", "read");
     data_tree* otree = new data_tree();
     otree->Init((TTree*)inFile->Get("otree"));
-    TFile* outFile = TFile::Open("light_ntuples/CMSSW_ttbar.root", "recreate");
+    TFile* outFile = TFile::Open("light_ntuples/CMSSW_ttbar_mu.root", "recreate");
     outFile->cd();
     TTree* ET = new TTree("light_tree", "light_tree");
     InitLightTree(ET);
@@ -123,6 +123,7 @@ int main(int argc, char* argv[])
 	else
 	    vbf_jet2_btag = 1;
 	vbf_jj_mass = otree->vbf_maxpt_jj_m;
+	vbf_jj_delta_eta = fabs(vbf_jet1_eta - vbf_jet2_eta);
 	vbf_jj_delta_phi = DeltaPhi(vbf_jet1_phi, vbf_jet2_phi);
 	vbf_jj_delta_R = DeltaR(vbf_jet1_eta, vbf_jet2_eta,
 				vbf_jet1_phi, vbf_jet2_phi);

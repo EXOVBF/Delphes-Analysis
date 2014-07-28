@@ -406,6 +406,7 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
 	lep_pt = lep_4vect_tmp.Pt();
 	lep_eta = lep_4vect_tmp.Eta();
 	lep_phi = lep_4vect_tmp.Phi();
+	lep_flv = DT->lep_flv->at(good_lep_tmp);
         //---MET
 	MET = DT->MET->at(0);
 	MET_phi = DT->MET_phi->at(0);
@@ -462,6 +463,7 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
 	vbf_jet2_mass = vbf_j2_4vect_tmp.M();
 	vbf_jet2_btag = DT->jet_ak5_btag->at(ak5_tmp.at(1));
 	vbf_jj_mass = (vbf_j1_4vect_tmp + vbf_j2_4vect_tmp).M();
+	vbf_jj_delta_eta = fabs(vbf_jet1_eta - vbf_jet2_eta); 
 	vbf_jj_delta_phi = DeltaPhi(vbf_jet1_phi, vbf_jet2_phi); 
 	vbf_jj_delta_R = DeltaR(vbf_jet1_eta, vbf_jet2_eta, 
 				vbf_jet1_phi, vbf_jet2_phi);
@@ -494,6 +496,8 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
 	gen_lep_pt = DT->lhe_lep_pt->at(0);
 	gen_lep_eta = DT->lhe_lep_eta->at(0);
 	gen_lep_phi = DT->lhe_lep_phi->at(0);
+	// flv of the most energetic lhe_lepton
+	gen_lep_flv = DT->lhe_lep_flv->at(0);
 	if(sampleName.Contains("Z") == 0)
 	{
 	    gen_nu_pt = DT->lhe_nu_pt->at(0);
@@ -569,6 +573,7 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
 	vbf_q2_4vect_tmp.SetPtEtaPhiM(gen_vbf_q2_pt, gen_vbf_q2_eta,
 				      gen_vbf_q2_phi, 0);
 	gen_vbf_qq_mass = (vbf_q1_4vect_tmp + vbf_q2_4vect_tmp).M();
+	gen_vbf_qq_delta_eta = fabs(gen_vbf_q1_eta - gen_vbf_q2_eta);
 	gen_vbf_qq_delta_phi = DeltaPhi(gen_vbf_q1_phi, gen_vbf_q2_phi);
 	gen_vbf_qq_delta_R = DeltaR(gen_vbf_q1_eta, gen_vbf_q2_eta,
 				    gen_vbf_q1_phi, gen_vbf_q2_phi);
@@ -627,7 +632,7 @@ int main (int argc, char* argv[])
         }
     }
     config_file.close();
-//-----------------Make Plots-------------------------------------------------------------
+//-----------------dump ntuples-----------------------------------------------------------
     for(int iSample=0; iSample<sample_dir.size(); iSample++)
     {
         TString sampleName(sample_name.at(iSample));

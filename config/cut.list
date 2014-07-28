@@ -1,11 +1,13 @@
 # lines beginning with '# ' are comments
 # C cut_number cut_label \n cut_value
-C 0 no_cut
-
+# C 0 el switch
+# (TMath::Abs(lep_flv) == 11 || lep_flv == 0)
+C 0 mu switch
+TMath::Abs(gen_lep_flv) != 15 || lep_flv == 0
 C 1 basic cut
 lep_pt > 50 && MET > 65 && lv_J_delta_phi > 2 && MET_J_delta_phi > 2 && l_J_delta_R > 3.14/2 && lv_Mt > 30 
 C 2 Wh_mass_window
-CA8_jet_mass > 65 && CA8_jet_mass < 105 
+CA8_jet_mass > 40 && CA8_jet_mass < 130
 C 3 Wl_mass_window
 lv_mass > 65 && lv_mass < 105 
 C 4 boosted Ws

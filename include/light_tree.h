@@ -22,6 +22,7 @@ float gen_X_mass=0;
 float gen_lep_pt=0;
 float gen_lep_eta=0;
 float gen_lep_phi=0;
+int gen_lep_flv=0;
 float gen_nu_pt=0;
 float gen_nu_eta=0;
 float gen_nu_phi=0;
@@ -42,6 +43,7 @@ float gen_vbf_q2_eta=0;
 float gen_vbf_q2_phi=0;
 float gen_vbf_q2_btag=0;
 float gen_vbf_qq_mass=0;
+float gen_vbf_qq_delta_eta=0;
 float gen_vbf_qq_delta_phi=0;
 float gen_vbf_qq_delta_R=0;
 //---reco----
@@ -49,6 +51,7 @@ float gen_vbf_qq_delta_R=0;
 float lep_pt=0;
 float lep_eta=0;
 float lep_phi=0;
+int lep_flv=0;
 float MET=0;
 float MET_phi=0;
 //---leptonic W
@@ -79,6 +82,7 @@ float vbf_jet2_phi=0;
 float vbf_jet2_mass=0;
 float vbf_jet2_btag=0;
 float vbf_jj_mass=0;
+float vbf_jj_delta_eta=0;
 float vbf_jj_delta_phi=0;
 float vbf_jj_delta_R=0;
 //---object separation
@@ -88,7 +92,7 @@ float l_J_delta_R=0;
 //---lvj
 float lvJ_mass=0; 
 //---Vertecies
-float nPV=0;
+int nPV=0;
 
 //-----Declaration of branches 
 //---global---
@@ -108,6 +112,7 @@ TBranch* b_gen_X_mass;
 TBranch* b_gen_lep_pt;
 TBranch* b_gen_lep_eta;
 TBranch* b_gen_lep_phi;
+TBranch* b_gen_lep_flv;
 TBranch* b_gen_nu_pt;
 TBranch* b_gen_nu_eta;
 TBranch* b_gen_nu_phi;
@@ -128,6 +133,7 @@ TBranch* b_gen_vbf_q2_eta;
 TBranch* b_gen_vbf_q2_phi;
 TBranch* b_gen_vbf_q2_btag;
 TBranch* b_gen_vbf_qq_mass;
+TBranch* b_gen_vbf_qq_delta_eta;
 TBranch* b_gen_vbf_qq_delta_phi;
 TBranch* b_gen_vbf_qq_delta_R;
 //---reco----
@@ -135,6 +141,7 @@ TBranch* b_gen_vbf_qq_delta_R;
 TBranch* b_lep_pt;
 TBranch* b_lep_eta;
 TBranch* b_lep_phi;
+TBranch* b_lep_flv;
 TBranch* b_MET;
 TBranch* b_MET_phi;
 //---leptonic W
@@ -165,6 +172,7 @@ TBranch* b_vbf_jet2_phi;
 TBranch* b_vbf_jet2_mass;
 TBranch* b_vbf_jet2_btag;
 TBranch* b_vbf_jj_mass;
+TBranch* b_vbf_jj_delta_eta;
 TBranch* b_vbf_jj_delta_phi;
 TBranch* b_vbf_jj_delta_R;
 //---object separation
@@ -195,6 +203,7 @@ void InitLightTree (TTree* fTree)
     fTree->Branch("gen_lep_pt", &gen_lep_pt, "gen_lep_pt/F");
     fTree->Branch("gen_lep_eta", &gen_lep_eta, "gen_lep_eta/F");
     fTree->Branch("gen_lep_phi", &gen_lep_phi, "gen_lep_phi/F"); 
+    fTree->Branch("gen_lep_flv", &gen_lep_flv, "gen_lep_flv/I"); 
     fTree->Branch("gen_nu_pt", &gen_nu_pt, "gen_nu_pt/F");
     fTree->Branch("gen_nu_eta", &gen_nu_eta, "gen_nu_eta/F");
     fTree->Branch("gen_nu_phi", &gen_nu_phi, "gen_nu_phi/F"); 
@@ -213,12 +222,14 @@ void InitLightTree (TTree* fTree)
     fTree->Branch("gen_vbf_q2_phi", &gen_vbf_q2_phi, "gen_vbf_q2_phi/F"); 
     fTree->Branch("gen_vbf_q2_btag", &gen_vbf_q2_btag, "gen_vbf_q2_btag/F");
     fTree->Branch("gen_vbf_qq_mass", &gen_vbf_qq_mass, "gen_vbf_qq_mass/F"); 
-    fTree->Branch("gen_vbf_qq_delta_phi", &gen_vbf_qq_delta_phi, "gen_vbf_qq_delta_phi/F"); 
+    fTree->Branch("gen_vbf_qq_delta_eta", &gen_vbf_qq_delta_eta, "gen_vbf_qq_delta_eta/F"); 
+    fTree->Branch("gen_vbf_qq_delta_phi", &gen_vbf_qq_delta_phi, "gen_vbf_qq_delta_phi/F");  
     fTree->Branch("gen_vbf_qq_delta_R", &gen_vbf_qq_delta_R, "gen_vbf_qq_delta_R/F"); 
     //---reco
     fTree->Branch("lep_pt", &lep_pt, "lep_pt/F");
     fTree->Branch("lep_eta", &lep_eta, "lep_eta/F");
     fTree->Branch("lep_phi", &lep_phi, "lep_phi/F");
+    fTree->Branch("lep_flv", &lep_flv, "lep_flv/I"); 
     fTree->Branch("MET", &MET, "MET/F");
     fTree->Branch("MET_phi", &MET_phi, "MET_phi/F");
     fTree->Branch("lv_mass", &lv_mass, "lv_mass/F");
@@ -246,13 +257,14 @@ void InitLightTree (TTree* fTree)
     fTree->Branch("vbf_jet2_mass", &vbf_jet2_mass, "vbf_jet2_mass/F");
     fTree->Branch("vbf_jet2_btag", &vbf_jet2_btag, "vbf_jet2_btag/F");
     fTree->Branch("vbf_jj_mass", &vbf_jj_mass, "vbf_jj_mass/F");
+    fTree->Branch("vbf_jj_delta_eta", &vbf_jj_delta_eta, "vbf_jj_delta_eta/F");
     fTree->Branch("vbf_jj_delta_phi", &vbf_jj_delta_phi, "vbf_jj_delta_phi/F");
     fTree->Branch("vbf_jj_delta_R", &vbf_jj_delta_R, "vbf_jj_delta_R/F");
     fTree->Branch("lv_J_delta_phi", &lv_J_delta_phi, "lv_J_delta_phi/F");
     fTree->Branch("MET_J_delta_phi", &MET_J_delta_phi, "MET_J_delta_phi/F");
     fTree->Branch("l_J_delta_R", &l_J_delta_R, "l_J_delta_R/F");
     fTree->Branch("lvJ_mass", &lvJ_mass, "lvJ_mass/F"); 
-    fTree->Branch("nPV", &nPV, "nPV/F"); 
+    fTree->Branch("nPV", &nPV, "nPV/I"); 
 }
 
 //****************************************************************************************
@@ -274,6 +286,7 @@ void SetLightTree (TTree* fTree)
     fTree->SetBranchAddress("gen_lep_pt", &gen_lep_pt, &b_gen_lep_pt);
     fTree->SetBranchAddress("gen_lep_eta", &gen_lep_eta, &b_gen_lep_eta);
     fTree->SetBranchAddress("gen_lep_phi", &gen_lep_phi, &b_gen_lep_phi);
+    fTree->SetBranchAddress("gen_lep_flv", &gen_lep_flv, &b_gen_lep_flv); 
     fTree->SetBranchAddress("gen_nu_pt", &gen_nu_pt, &b_gen_nu_pt);
     fTree->SetBranchAddress("gen_nu_eta", &gen_nu_eta, &b_gen_nu_eta);
     fTree->SetBranchAddress("gen_nu_phi", &gen_nu_phi, &b_gen_nu_phi);
@@ -292,12 +305,14 @@ void SetLightTree (TTree* fTree)
     fTree->SetBranchAddress("gen_vbf_q2_phi", &gen_vbf_q2_phi, &b_gen_vbf_q2_phi);
     fTree->SetBranchAddress("gen_vbf_q2_btag", &gen_vbf_q2_btag, &b_gen_vbf_q2_btag);
     fTree->SetBranchAddress("gen_vbf_qq_mass", &gen_vbf_qq_mass, &b_gen_vbf_qq_mass);
+    fTree->SetBranchAddress("gen_vbf_qq_delta_eta", &gen_vbf_qq_delta_eta, &b_gen_vbf_qq_delta_eta);
     fTree->SetBranchAddress("gen_vbf_qq_delta_phi", &gen_vbf_qq_delta_phi, &b_gen_vbf_qq_delta_phi);
     fTree->SetBranchAddress("gen_vbf_qq_delta_R", &gen_vbf_qq_delta_R, &b_gen_vbf_qq_delta_R);
     //---reco    
     fTree->SetBranchAddress("lep_pt", &lep_pt, &b_lep_pt);
     fTree->SetBranchAddress("lep_eta", &lep_eta, &b_lep_eta);
     fTree->SetBranchAddress("lep_phi", &lep_phi, &b_lep_phi);
+    fTree->SetBranchAddress("lep_flv", &lep_flv, &b_lep_flv); 
     fTree->SetBranchAddress("MET", &MET, &b_MET);
     fTree->SetBranchAddress("MET_phi", &MET_phi, &b_MET_phi);
     fTree->SetBranchAddress("lv_mass", &lv_mass, &b_lv_mass);
@@ -325,6 +340,7 @@ void SetLightTree (TTree* fTree)
     fTree->SetBranchAddress("vbf_jet2_mass", &vbf_jet2_mass, &b_vbf_jet2_mass);
     fTree->SetBranchAddress("vbf_jet2_btag", &vbf_jet2_btag, &b_vbf_jet2_btag);
     fTree->SetBranchAddress("vbf_jj_mass", &vbf_jj_mass, &b_vbf_jj_mass);
+    fTree->SetBranchAddress("vbf_jj_delta_eta", &vbf_jj_delta_eta, &b_vbf_jj_delta_eta);
     fTree->SetBranchAddress("vbf_jj_delta_phi", &vbf_jj_delta_phi, &b_vbf_jj_delta_phi);
     fTree->SetBranchAddress("vbf_jj_delta_R", &vbf_jj_delta_R, &b_vbf_jj_delta_R);
     fTree->SetBranchAddress("lv_J_delta_phi", &lv_J_delta_phi, &b_lv_J_delta_phi);
