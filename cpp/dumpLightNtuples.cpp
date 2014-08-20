@@ -15,7 +15,7 @@
 #include<iostream>
 #include<fstream>
 #include<cmath>
-#include<algorithm>
+#include<algorithm> 	      
 
 #include "TChain.h"
 #include "TString.h"
@@ -233,12 +233,11 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
     vector<int> ak5_tmp;
     //---Ws
     float W_lep_tmp=0, W_had_tmp=0;
-    float Wl_closerjet_tmp=0, Wh_closerjet_tmp=0; 
+    float Wl_closestjet_tmp=0, Wh_closestjet_tmp=0; 
     float dR_Wl_j=100, dR_Wh_j=100; 
     //---counters
     int countPSEvents=0, countBSEvents=0;
-
-    //---Load data---
+    //---Load data
     TChain * ch = new TChain ("Delphes") ;
     for(int i=0; i<datasetBaseName.size(); i++)
     {
@@ -254,10 +253,21 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
 	DT->Init(ch, false);
     TFile* outFile = TFile::Open("/afs/cern.ch/user/s/spigazzi/work/EXOVBF/Delphes-Analysis/light_ntuples/"+sampleName+".root", "recreate");
     outFile->cd();
-    TTree* ET = new TTree("light_tree", "light_tree");
-    InitLightTree(ET);
-    ET->SetDirectory(0);
-
+    TTree* LT = new TTree("light_tree", "light_tree");
+    InitLightTree(LT);
+    LT->SetDirectory(0);
+    /*
+    //---inport weights file
+    vector<float> wgt_l_wdge, wgt_h_edge, wgt_value;
+    float wgt_buffer=0;
+    ifstream weights("tmp/delphes_evt_weights.txt", ios::in);
+    while(weights >> wgt_buffer)
+    {
+	wgt_l_edge.pusgh_back(wgt_buffer);
+	weights >> wgt_buffer;
+	wgt_value.pusgh_back(wgt_buffer);
+    }
+    */
 //-----------------Events loop------------------------------------------------------------
  
     for (int iEvent = 0 ; iEvent < ch->GetEntries() ; iEvent++)
@@ -307,29 +317,29 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
         {    
             d_xy_tmp = TMath::Sqrt(pow(X_ver_tmp - DT->lep_X_vertex->at(iLep),2) + pow(X_ver_tmp - DT->lep_X_vertex->at(iLep),2));
             //---tight electron
-            if( abs(DT->lep_flv->at(iLep)) == 11 && abs(DT->lep_Z_vertex->at(iLep)-Z_ver_tmp) < 0.1 && DT->lep_pt->at(iLep) > 35 && 
-                (DT->lep_eta->at(iLep) < 1.4442 || DT->lep_eta->at(iLep) > 1.566) && DT->lep_isolation->at(iLep)*DT->lep_pt->at(iLep) < 5 &&
-                d_xy_tmp < 0.2 && DT->MET->at(0) > 65) 
+            if( abs(DT->lep_flv->at(iLep)) == 11 && fabs(DT->lep_Z_vertex->at(iLep)-Z_ver_tmp) < 0.1 && DT->lep_pt->at(iLep) > 35 && 
+                (fabs(DT->lep_eta->at(iLep)) < 1.4442 || fabs(DT->lep_eta->at(iLep)) > 1.566) && fabs(DT->lep_eta->at(iLep)) < 2.5 &&
+		DT->lep_isolation->at(iLep)*DT->lep_pt->at(iLep) < 5 && d_xy_tmp < 0.2 && DT->MET->at(0) > 65) 
             {
                 good_lep_tmp = iLep;
                 n_lept_tmp++;
             }
             //---loose electron
-            else if( abs(DT->lep_flv->at(iLep)) == 11 && abs(DT->lep_Z_vertex->at(iLep)-Z_ver_tmp) < 0.1 && DT->lep_pt->at(iLep) > 20 && 
-		     DT->lep_eta->at(iLep) < 2.5 && DT->lep_isolation->at(iLep)*DT->lep_pt->at(iLep) < 5 && d_xy_tmp < 0.2) 
+            else if( abs(DT->lep_flv->at(iLep)) == 11 && fabs(DT->lep_Z_vertex->at(iLep)-Z_ver_tmp) < 0.1 && DT->lep_pt->at(iLep) > 20 && 
+		     fabs(DT->lep_eta->at(iLep)) < 2.5 && DT->lep_isolation->at(iLep)*DT->lep_pt->at(iLep) < 5 && d_xy_tmp < 0.2) 
             {
                 n_lepl_tmp++;
             }
             //---tight muon
-            if( abs(DT->lep_flv->at(iLep)) == 13 && abs(DT->lep_Z_vertex->at(iLep)-Z_ver_tmp) < 5 && DT->lep_pt->at(iLep) > 50 && 
-		DT->lep_eta->at(iLep) < 2.1 && DT->lep_isolation->at(iLep) < 0.1 && d_xy_tmp < 2 && DT->MET->at(0) > 50)
+            if( abs(DT->lep_flv->at(iLep)) == 13 && fabs(DT->lep_Z_vertex->at(iLep)-Z_ver_tmp) < 5 && DT->lep_pt->at(iLep) > 50 && 
+		fabs(DT->lep_eta->at(iLep)) < 2.1 && DT->lep_isolation->at(iLep) < 0.1 && d_xy_tmp < 2 && DT->MET->at(0) > 50)
             {
                 good_lep_tmp = iLep;
                 n_lept_tmp++;
             }
             //---loose muon
-            else if( abs(DT->lep_flv->at(iLep)) == 13 && abs(DT->lep_Z_vertex->at(iLep)-Z_ver_tmp) < 5 && DT->lep_pt->at(iLep) > 10 && 
-                     DT->lep_eta->at(iLep) < 2.5 && DT->lep_isolation->at(iLep) < 0.1 && d_xy_tmp < 2)
+            else if( abs(DT->lep_flv->at(iLep)) == 13 && fabs(DT->lep_Z_vertex->at(iLep)-Z_ver_tmp) < 5 && DT->lep_pt->at(iLep) > 10 && 
+                     fabs(DT->lep_eta->at(iLep)) < 2.5 && DT->lep_isolation->at(iLep) < 0.1 && d_xy_tmp < 2)
             {
                 n_lepl_tmp++;
             }
@@ -387,12 +397,12 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
 					   DT->jet_ak5_phi->at(iak5));
 		if(dR_Wl_j_tmp < dR_Wl_j)
 		{
-		    Wl_closerjet_tmp = iak5;
+		    Wl_closestjet_tmp = iak5;
 		    dR_Wl_j = dR_Wl_j_tmp;
 		}
 		if(dR_Wh_j_tmp < dR_Wh_j)
 		{
-		    Wh_closerjet_tmp = iak5;
+		    Wh_closestjet_tmp = iak5;
 		    dR_Wh_j = dR_Wh_j_tmp;
 		}
 	    }
@@ -418,12 +428,12 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
 	lv_delta_R = DeltaR(lep_4vect_tmp.Eta(), nu_4vect_tmp.Eta(),
 			    lep_4vect_tmp.Phi(), nu_4vect_tmp.Phi());
 	lv_Mt = TMath::Sqrt(lep_pt*MET*(1-TMath::Cos(DeltaPhi(lep_phi, MET_phi))));
-	//---Wl closerjet
-	Wl_closerj_4vect_tmp.SetPtEtaPhiM(DT->jet_ak5_pt->at(Wl_closerjet_tmp),
-					  DT->jet_ak5_eta->at(Wl_closerjet_tmp),
-					  DT->jet_ak5_phi->at(Wl_closerjet_tmp),
-					  DT->jet_ak5_mass_pruned->at(Wl_closerjet_tmp));
-	lv_closerjet_mass = (Wl_reco_4vect_tmp + Wl_closerj_4vect_tmp).M();
+	//---Wl closestjet
+	Wl_closerj_4vect_tmp.SetPtEtaPhiM(DT->jet_ak5_pt->at(Wl_closestjet_tmp),
+					  DT->jet_ak5_eta->at(Wl_closestjet_tmp),
+					  DT->jet_ak5_phi->at(Wl_closestjet_tmp),
+					  DT->jet_ak5_mass_pruned->at(Wl_closestjet_tmp));
+	lv_closestjet_mass = (Wl_reco_4vect_tmp + Wl_closerj_4vect_tmp).M();
 	//---CA8 jet (hadronic W reco)
 	CA8_jet_pt = J_4vect_tmp.Pt();
 	CA8_jet_eta = J_4vect_tmp.Eta();
@@ -431,12 +441,12 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
 	CA8_jet_mass = J_4vect_tmp.M();
 	CA8_jet_t2t1 = DT->jet_CA8_tau2->at(good_CA8_tmp)/DT->jet_CA8_tau1->at(good_CA8_tmp);
 	CA8_jet_t3t2 = DT->jet_CA8_tau3->at(good_CA8_tmp)/DT->jet_CA8_tau2->at(good_CA8_tmp);
-	//---CA8 closerjet
-	Wh_closerj_4vect_tmp.SetPtEtaPhiM(DT->jet_ak5_pt->at(Wh_closerjet_tmp),
-					  DT->jet_ak5_eta->at(Wh_closerjet_tmp),
-					  DT->jet_ak5_phi->at(Wh_closerjet_tmp),
-					  DT->jet_ak5_mass_pruned->at(Wh_closerjet_tmp));
-	CA8_closerjet_mass = (J_4vect_tmp + Wh_closerj_4vect_tmp).M();
+	//---CA8 closestjet
+	Wh_closerj_4vect_tmp.SetPtEtaPhiM(DT->jet_ak5_pt->at(Wh_closestjet_tmp),
+					  DT->jet_ak5_eta->at(Wh_closestjet_tmp),
+					  DT->jet_ak5_phi->at(Wh_closestjet_tmp),
+					  DT->jet_ak5_mass_pruned->at(Wh_closestjet_tmp));
+	CA8_closestjet_mass = (J_4vect_tmp + Wh_closerj_4vect_tmp).M();
 	//---Object separation
 	lv_J_delta_phi = DeltaPhi(lv_phi, CA8_jet_phi);
 	MET_J_delta_phi = DeltaPhi(MET_phi, CA8_jet_phi);
@@ -577,11 +587,16 @@ int readDataset (TString sampleName, vector<TString> datasetBaseName)
 	gen_vbf_qq_delta_phi = DeltaPhi(gen_vbf_q1_phi, gen_vbf_q2_phi);
 	gen_vbf_qq_delta_R = DeltaR(gen_vbf_q1_eta, gen_vbf_q2_eta,
 				    gen_vbf_q1_phi, gen_vbf_q2_phi);
-	ET->Fill();
+	//---compute and store the event weight
+	/*int iBin=0;
+	while(iBin<wgt_l_edge.size() && nPV >= wgt_l_edge.at(iBin))
+	    iBin++;
+	    evt_weight = wgt_value.at(iBin);*/
+	LT->Fill();
     }    
     cout << "number of events that passed the preselection:  " << countPSEvents << endl;    
 
-    ET->Write();
+    LT->Write();
     outFile->Close();
 	
     return 0 ;
@@ -603,7 +618,8 @@ int main (int argc, char* argv[])
     }
     configFile = argv[1];
     cout << "CONFIG samples file:  " << configFile.Data() << endl;
-    if(argc > 2) outFile = argv[2];
+    if(argc > 2) 
+	outFile = argv[2];
     cout << "OUTPUT file: " << outFile.Data() << endl;
     
 //-----------------Definitions------------------------------------------------------------

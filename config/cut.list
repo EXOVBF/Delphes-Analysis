@@ -3,9 +3,9 @@
 # C 0 el switch
 # (TMath::Abs(lep_flv) == 11 || lep_flv == 0)
 C 0 mu switch
-TMath::Abs(gen_lep_flv) != 15 || lep_flv == 0
+(TMath::Abs(lep_flv) == 13 || lep_flv == 0)
 C 1 basic cut
-lep_pt > 50 && MET > 65 && lv_J_delta_phi > 2 && MET_J_delta_phi > 2 && l_J_delta_R > 3.14/2 && lv_Mt > 30 
+lep_pt>50 && MET>65 && lv_J_delta_phi>2 && MET_J_delta_phi>2 && l_J_delta_R>3.14/2 && lv_Mt>30 && CA8_jet_pt>150 && lv_pt>150 && TMath::Abs(lep_eta)<2.1 
 C 2 Wh_mass_window
 CA8_jet_mass > 40 && CA8_jet_mass < 130
 C 3 Wl_mass_window
@@ -15,7 +15,7 @@ CA8_jet_pt > 200 && lv_pt > 200
 C 5 b_veto 
 vbf_jet1_btag < 0.5 && vbf_jet2_btag < 0.5
 C 6 top_mass_veto 
-lv_closerjet_mass > 200 && CA8_closerjet_mass > 210
+lv_closestjet_mass > 200 && CA8_closestjet_mass > 210
 C 7 W_tagger
 CA8_jet_t2t1 < 0.5
 C 8 vbf_topology

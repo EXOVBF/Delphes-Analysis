@@ -19,7 +19,7 @@ int variablePlotter_MC()
     //---
     TString x_title("");
     TString y_title("");
-    TH1F* histo_data;
+    TH1F* histo_cmssw;
     TGraph* data_point = new TGraph();
     //-----load cuts-----
     ifstream cut_list("config/cut.list");
@@ -78,20 +78,20 @@ int variablePlotter_MC()
 	}
 	plot_conf >> S_buffer;
     }
-    //TString all_cuts = "evt_weight*(";
-    TString all_cuts =" ";
+    TString all_cuts = "evt_weight*(";
+    //TString all_cuts =" ";
     for(int iCut=0; iCut<cut_value.size(); iCut++)
     {
 	if(TString(cuts).Contains(cut_number.at(iCut)))
 	{
-	    //if(all_cuts == "evt_weight*(")
-	    if(all_cuts == " ")
+	    if(all_cuts == "evt_weight*(")
+		//if(all_cuts == " ")
 		all_cuts += cut_value.at(iCut);
 	    else
 		all_cuts += " && " + cut_value.at(iCut);
 	}
     }
-    //all_cuts += ")";
+    all_cuts += ")";
     cout << all_cuts.Data() << endl;
     //-----plot all variables-----
     while(plot_conf >> S_buffer)
@@ -104,10 +104,11 @@ int variablePlotter_MC()
 	{
 	    int nbins;
 	    float low, high;
-	    string unit, step;
+	    string unit, step, var_name;
 	    plot_conf >> S_buffer;
 	    plot_conf >> nbins >> low >> high;
 	    plot_conf >> unit >> step;
+	    var_name = S_buffer;
 	    x_title = TString(S_buffer+" ["+unit+"]");
 	    y_title = TString("counts/"+step+unit);
 	    THStack* stack = new THStack(S_buffer.c_str(), S_buffer.c_str());
@@ -138,7 +139,7 @@ int variablePlotter_MC()
 		}
 		else
 		{
-		    histo_data = histo1D[iSample];
+		    histo_cmssw = histo1D[iSample];
 		}
 		cout << "events for " << samples.at(iSample) 
 		     << " sample: " << histo1D[iSample]->GetEntries()*norm.at(iSample) << endl;
@@ -148,30 +149,57 @@ int variablePlotter_MC()
 	    histo_errors->SetLineColor(kBlack);
 	    histo_errors->SetMarkerStyle(20);
 	    histo_errors->SetMarkerSize(0.7);
-	    histo_data->SetFillColor(kGreen);
-	    histo_data->Draw("hist");	    
-	    histo_data->GetXaxis()->SetTitle(x_title);
-	    histo_data->GetYaxis()->SetTitle(y_title);
-	    histo_data->SetMinimum(0);
-	    histo_data->SetMaximum(histo_errors->GetBinError(histo_errors->GetMaximumBin())+
-				   histo_errors->GetMaximum());
+	    histo_cmssw->SetFillColor(kGreen);
+	    histo_cmssw->Draw("hist");
+	    histo_cmssw->SetTitle(var_name.c_str());
+	    histo_cmssw->GetXaxis()->SetTitle(x_title);
+	    histo_cmssw->GetYaxis()->SetTitle(y_title);
+	    histo_cmssw->SetMinimum(0);
+	    if(histo_errors->GetMaximum() > histo_cmssw->GetMaximum())
+	    {
+		histo_cmssw->SetMaximum((histo_errors->GetBinError(histo_errors->GetMaximumBin())+
+					 histo_errors->GetMaximum())*1.1);
+	    }
+	    else
+	    {
+		histo_cmssw->SetMaximum((histo_cmssw->GetBinError(histo_cmssw->GetMaximumBin())+
+					 histo_cmssw->GetMaximum())*1.1);
+	    }
 	    gPad->Update();
 	    histo_errors->Draw("E1same");
+	    //TLegend* lg = new TLegend(0.15, 0.6, 0.30, 0.85);
 	    TLegend* lg = new TLegend(0.7, 0.6, 0.85, 0.85);
 	    lg->SetBorderSize(0);
-	    lg->SetFillColor(kWhite);
-	    lg->AddEntry(histo_data, "CMSSW ttbar", "f");
-	    lg->AddEntry(histo_errors, "Delphes ttbar", "pl");
+	    lg->SetFillStyle(0);
+	    lg->AddEntry(histo_cmssw, "CMSSW", "f");
+	    lg->AddEntry(histo_errors, "Delphes", "pl");
 	    lg->Draw("same");
 	    char plot_name[20];
 	    sprintf(plot_name, "plot/%s.png", S_buffer.c_str());
 	    gPad->Update();
 	    c1->Print(plot_name, "png");
+	    /*
+	    ofstream weights("tmp/delphes_evt_weights_mu.txt", ios::out);
+	    for(int iBin=1; iBin<=histo_cmssw->GetNbinsX(); iBin++)
+	    {
+		if(histo_cmssw->GetBinContent(iBin) != 0)
+		{
+		    weights << histo_cmssw->GetBinLowEdge(iBin) << "  " 
+			    << (histo_errors->GetBinContent(iBin)/
+				histo_cmssw->GetBinContent(iBin))
+			    << endl;
+		}
+		else
+		{
+		    weights << histo_cmssw->GetBinLowEdge(iBin) << "  1" << endl;
+		}
+	    }
+	    weights.close();*/
 	    //---reset >> next variable---
 	    histo_errors->Delete();
-	    stack->Delete();
-	    if(histo_data)
-		histo_data->Delete();
+	    stack->Delete(); 
+	    if(histo_cmssw)
+	      histo_cmssw->Delete();
 	}
     }
     //-----Exit-----
